@@ -2,7 +2,8 @@ package Modelo;
 
 import java.util.Objects;
 
-public class setLECTURAS {
+public class LECTURAS {
+
     private String codigo_porcion;
     private String uni_lectura;
     private String doc_lectura;
@@ -25,7 +26,7 @@ public class setLECTURAS {
     private String nombre;
     private String clase_instalacion;
 
-    public setLECTURAS(String codigo_porcion, String uni_lectura, String doc_lectura, String cuenta_contrato, String medidor, String lectura_ant, String lectura_act, String anomalia_1, String anomalia_2, String codigo_operario, String vigencia, String fecha, String orden_lectura, String leido, String calle, String edificio, String suplemento_casa, String interloc_comercial, String apellido, String nombre, String clase_instalacion) {
+    public LECTURAS(String codigo_porcion, String uni_lectura, String doc_lectura, String cuenta_contrato, String medidor, String lectura_ant, String lectura_act, String anomalia_1, String anomalia_2, String codigo_operario, String vigencia, String fecha, String orden_lectura, String leido, String calle, String edificio, String suplemento_casa, String interloc_comercial, String apellido, String nombre, String clase_instalacion) {
         this.codigo_porcion = codigo_porcion;
         this.uni_lectura = uni_lectura;
         this.doc_lectura = doc_lectura;
@@ -248,12 +249,13 @@ public class setLECTURAS {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        setLECTURAS setLECTURAS = (setLECTURAS) o;
-        return Objects.equals(doc_lectura, setLECTURAS.doc_lectura);
+        Modelo.LECTURAS LECTURAS = (Modelo.LECTURAS) o;
+        return Objects.equals(doc_lectura, LECTURAS.doc_lectura);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(doc_lectura);
     }
+
 }

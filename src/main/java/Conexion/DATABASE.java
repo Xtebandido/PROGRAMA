@@ -1,22 +1,20 @@
-package Conexiones;
+package Conexion;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-public class conexion_lectura {
-    File RutaDB = new File("dbs\\LECTURAS");
-    String url = "" + RutaDB;
+public class DATABASE {
+    File DB = new File("dbs\\BASE_DE_DATOS");
 
     public Connection conectarSQL() {
         Connection con = null;
         try {
-            con = DriverManager.getConnection("jdbc:sqlite:" + url);
+            con = DriverManager.getConnection("jdbc:sqlite:" + DB.getAbsolutePath());
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return con;
     }
-
 }
