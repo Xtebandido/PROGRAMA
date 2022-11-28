@@ -1,0 +1,4 @@
+.mode csv
+.open 'C:\Users\ecamachos\Documents\ecamachos\Programa\Acueducto\dbs\LECTURAS'
+.import 'C:\Users\ecamachos\Documents\ecamachos\Programa\Acueducto\files\Datos.csv' DATOS
+.shell del 'C:\Users\ecamachos\Documents\ecamachos\Programa\Acueducto\files\Datos.csv'
