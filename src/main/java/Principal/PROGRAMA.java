@@ -47,10 +47,12 @@ public class PROGRAMA extends JFrame implements Runnable {
     JPanel jpExportar; //PANEL DE EXPORTAR DENTRO DEL PANEL DE LECTURAS
     JButton btnEXPORT; // BOTON PARA EXPORTAR TODOS LOS DATOS
 
-    List<VIGENCIAS> Vigencias; //LISTA CON MODELO DE ANOMALIAS LLAMADA Anomalias
-    List<ANOMXVIG> AnomaliasXVigencia; //LISTA CON MODELO DE ANOMALIAS LLAMADA Anomalias
-    List<CON_0> Consumo_0; //LISTA CON MODELO DE ANOMALIAS LLAMADA Anomalias
-
+    List<VIGENCIAS> Vigencias; //LISTA CON MODELO DE -- LLAMADA --
+    List<ANOMXVIG> AnomaliasXVigencia; //LISTA CON MODELO DE -- LLAMADA --
+    List<CON_0> Consumo_0; //LISTA CON MODELO DE -- LLAMADA --
+    List<LEIDO> Leido; //LISTA CON MODELO DE -- LLAMADA --
+    List<NO_LEIDO> NoLeido; //LISTA CON MODELO DE -- LLAMADA --
+    List<TOTAL> Total; //LISTA CON MODELO DE -- LLAMADA --
 
     //METODO PRINCIPAL
     public PROGRAMA() {
@@ -297,7 +299,7 @@ public class PROGRAMA extends JFrame implements Runnable {
                             writeDATA.println();
                         }
                         writeDATA.close();
-    // 3. IMPORTAR LISTA DE DATOS A LA BASE DE DATOS
+                        // 3. IMPORTAR LISTA DE DATOS A LA BASE DE DATOS
 
                         //CREAR ARCHIVO DE COMANDOS CON LAS RUTAS DE LA BASE DE DATOS Y EL ARCHIVO
                         File RutaDB = new File("dbs\\BASE_DE_DATOS");
@@ -310,7 +312,8 @@ public class PROGRAMA extends JFrame implements Runnable {
                         writeCOMANDOS.println(".import '" + RutaDATA.getAbsolutePath() + "' LECTURAS");
                         writeCOMANDOS.print(".shell del '" + RutaDATA.getAbsolutePath() + "'");
                         writeCOMANDOS.close();
-                        //LINEA DE COMANDOS EJECUTANDO EL COMANDO (script)
+                        //LINEA DE COMANDOS EJECUTANDO EL COMANDO (script
+
                         Runtime.getRuntime().exec("cmd /c start cmd.exe /K \" cd " + RutaCARPETA.getAbsolutePath() + " && script.cmd && exit");
 
                         fCargar.dispose(); //CERRAR LOADING
@@ -322,9 +325,10 @@ public class PROGRAMA extends JFrame implements Runnable {
                             JOptionPane.showMessageDialog(null, "SE ENCONTRO " + repetidosFinal.size() + " REGISTROS REPETIDOS EN EL ARCHIVO");
                             Runtime.getRuntime().exec("cmd /c start cmd.exe /K \" start " + ARCHIVOS.getAbsolutePath() + "\\Repetidos.xlsx" + " && exit");
                         }
+                        File nombreCICLO = new File(jtxtPATH.getText());
+                        JOptionPane.showMessageDialog(null, "SE IMPORTO CORRECTAMENTE " + DATA.size() + " REGISTROS DEL CICLO " + nombreCICLO.getName());
                         jtxtPATH.setText(null);
                         PATH = "";
-                        JOptionPane.showMessageDialog(null, "SE IMPORTO CORRECTAMENTE " + DATA.size() + " REGISTROS");
                     }
                     else {
                         JOptionPane.showMessageDialog(null, "ERROR: VERIFIQUE LOS SIGUIENTES DATOS DEL ARCHIVO:\n"+DATOCONCOMA); //MENSAJE DE ERROR POR LA ESTRUCTURA DEL ARCHIVO
@@ -368,6 +372,40 @@ public class PROGRAMA extends JFrame implements Runnable {
         String AxV = "";
 
         try {
+            //VALIDAR QUE LA DIFERENCIA DE VIGENCIA DE LECTURAS SEAN DE 4 AÑOS PARA EL INFORME
+            PreparedStatement psVigencia = con.prepareStatement("SELECT DISTINCT vigencia FROM LECTURAS ORDER BY vigencia");
+            ResultSet rsVigencia = psVigencia.executeQuery();
+            while (rsVigencia.next()) {
+                VIGENCIAS Vigencia = new VIGENCIAS();
+                Vigencia.setVigencia(rsVigencia.getString("vigencia"));
+                Vigencias.add(Vigencia);
+            }
+
+            //VALIDAR QUE LA DIFERENCIA DEL ULTIMO AÑO AL PRIMER AÑO SEA IGUAL A 400
+            int vigINICIAL = 0;
+            int vigFINAL = 0;
+            for (int j = 0; j < Vigencias.size(); j++) {
+                if (j == 0) {
+                    vigINICIAL = Integer.parseInt(Vigencias.get(0).getVigencia());
+                }
+                if (j == (Vigencias.size() - 1)) {
+                    vigFINAL = Integer.parseInt(Vigencias.get(j).getVigencia());
+                }
+            }
+            if (vigFINAL - vigINICIAL == 400) {
+                Statement delete = con.createStatement();
+                delete.executeUpdate("DELETE FROM LECTURAS WHERE vigencia = '" + vigINICIAL + "'");
+            }
+            Vigencias.clear();
+            //LISTAR VIGENCIAS NUEVAMENTE
+            psVigencia = con.prepareStatement("SELECT DISTINCT vigencia FROM LECTURAS ORDER BY vigencia");
+            rsVigencia = psVigencia.executeQuery();
+            while (rsVigencia.next()) {
+                VIGENCIAS Vigencia = new VIGENCIAS();
+                Vigencia.setVigencia(rsVigencia.getString("vigencia"));
+                Vigencias.add(Vigencia);
+            }
+
             //AGREGAR ANOMALIAS
             for (int i = 4; i <= 30; i++) {
                 if (i == 22) {
@@ -402,15 +440,6 @@ public class PROGRAMA extends JFrame implements Runnable {
             Descripcion.add("PREDIO OCUPADO");
             Descripcion.add("PREDIO MAL ENRUTADO");
             Descripcion.add("OCUPACION INDETERMINADA");
-
-            //AGREGAR VIGENCIAS
-            PreparedStatement psVigencia = con.prepareStatement("SELECT DISTINCT vigencia FROM LECTURAS ORDER BY vigencia");
-            ResultSet rsVigencia = psVigencia.executeQuery();
-            while (rsVigencia.next()) {
-                VIGENCIAS Vigencia = new VIGENCIAS();
-                Vigencia.setVigencia(rsVigencia.getString("vigencia"));
-                Vigencias.add(Vigencia);
-            }
 
             //CONTEO ANOMALIAS X VIGENCIA
             int separar = 1;
@@ -568,12 +597,15 @@ public class PROGRAMA extends JFrame implements Runnable {
             //FIN ANOMALIAS
 
             //CONSUMO 0
-            List Codigo_porcion = new ArrayList<String>();
             Consumo_0 = new ArrayList<CON_0>();
-            String codpor;
+            List Codigo_porcion = new ArrayList<String>();
+            List CodPorXVig = new ArrayList<String>();
+            String codporxvig = "";
 
+            separar = 1;
             for(c = 'A'; c <= 'Z'; ++c) {
-                codpor = c + "4";
+                Consumo_0.clear();
+                String codpor = c + "4";
                 if (codpor.equals("I4")) {
                     c = 'J';
                     codpor = "J4";
@@ -586,15 +618,26 @@ public class PROGRAMA extends JFrame implements Runnable {
                     codpor = "Z4";
                 }
                 Codigo_porcion.add(codpor);
-            }
-            for (int i = 0; i < Vigencias.size(); i++){
-                for (int j = 0; j < Codigo_porcion.size(); j++) {
-                    PreparedStatement psCON_0 = con.prepareStatement("SELECT count(*) AS CONSUMO_0 FROM LECTURAS WHERE codigo_porcion = '"+Codigo_porcion.get(j)+"' AND lectura_act - lectura_ant = 0 AND vigencia = '" + Vigencias.get(i).getVigencia() + "'");
+
+                for (int i = 0; i < Vigencias.size(); i++) {
+                    PreparedStatement psCON_0 = con.prepareStatement("SELECT count(*) AS CONSUMO_0 FROM LECTURAS WHERE codigo_porcion = '" + codpor + "' AND lectura_act - lectura_ant = 0 AND vigencia = '" + Vigencias.get(i).getVigencia() + "'");
                     ResultSet rsCON_0 = psCON_0.executeQuery();
                     CON_0 con_0 = new CON_0();
                     con_0.setCon_0(rsCON_0.getString("CONSUMO_0"));
                     Consumo_0.add(con_0);
                 }
+
+                for (CON_0 model : Consumo_0) {
+                    codporxvig += model.getCon_0();
+                    if (separar == Vigencias.size()) {
+                        CodPorXVig.add(codporxvig);
+                        separar = 1;
+                    } else {
+                        codporxvig += ",";
+                        separar += 1;
+                    }
+                }
+                codporxvig = "";
             }
 
             File fileCONSUMO_0 = new File("files\\CONSUMO_0.csv"); //ARCHIVO PARA RETORNAR TODOS LOS DATOS EN UN ARCHIVO csv
@@ -619,7 +662,7 @@ public class PROGRAMA extends JFrame implements Runnable {
 
             for (int j = 0; j < Codigo_porcion.size(); j++) {
                 writeCONSUMO_0.print(Codigo_porcion.get(j));
-                writeCONSUMO_0.print("," + Consumo_0.get(j).getCon_0());
+                writeCONSUMO_0.print("," + CodPorXVig.get(j));
                 writeCONSUMO_0.println();
             }
             writeCONSUMO_0.println("TOTAL");
@@ -714,6 +757,252 @@ public class PROGRAMA extends JFrame implements Runnable {
             fileCONSUMO_0.delete(); //ELIMINAR ARCHIVO DE CONSUMO_0.csv
             //FIN CONSUMO_0
 
+            //LECTURAS
+            Leido = new ArrayList<LEIDO>();
+            NoLeido = new ArrayList<NO_LEIDO>();
+            Total = new ArrayList<TOTAL>();
+            List Lecturas = new ArrayList<String>();
+            String lnt = "";
+
+            separar = 1;
+            Codigo_porcion.clear();
+            for(c = 'A'; c <= 'Z'; ++c) {
+                Leido.clear();
+                NoLeido.clear();
+                Total.clear();
+
+                String codpor = c + "4";
+                if (codpor.equals("I4")) {
+                    c = 'J';
+                    codpor = "J4";
+                }
+                else if (codpor.equals("O4")) {
+                    c = 'P';
+                    codpor = "P4";
+                } else if (codpor.equals("Y4")) {
+                    c = 'Z';
+                    codpor = "Z4";
+                }
+                Codigo_porcion.add(codpor);
+
+                for (int i = 0; i < Vigencias.size(); i++) {
+
+                    //LEIDO
+                    PreparedStatement psLEIDO = con.prepareStatement("SELECT count(*) as LEIDO FROM LECTURAS WHERE (codigo_porcion = '" + codpor + "') AND lectura_act != '' AND vigencia = '" + Vigencias.get(i).getVigencia() + "'");
+                    ResultSet rsLEIDO = psLEIDO.executeQuery();
+                    LEIDO leido = new LEIDO();
+                    leido.setLeido(rsLEIDO.getString("LEIDO"));
+                    Leido.add(leido);
+
+                    //NO LEIDO
+                    PreparedStatement psNO_LEIDO = con.prepareStatement("SELECT count(*) as NO_LEIDO FROM LECTURAS WHERE (codigo_porcion = '" + codpor + "') AND lectura_act = '' AND vigencia = '" + Vigencias.get(i).getVigencia() + "'");
+                    ResultSet rsNO_LEIDO = psNO_LEIDO.executeQuery();
+                    NO_LEIDO no_leido = new NO_LEIDO();
+                    no_leido.setNo_Leido(rsNO_LEIDO.getString("NO_LEIDO"));
+                    NoLeido.add(no_leido);
+
+                    //TOTAL
+                    PreparedStatement psTOTAL = con.prepareStatement("SELECT count(*) as TOTAL FROM LECTURAS WHERE (codigo_porcion = '" + codpor + "') AND vigencia = '" + Vigencias.get(i).getVigencia() + "'");
+                    ResultSet rsTOTAL = psTOTAL.executeQuery();
+                    TOTAL total = new TOTAL();
+                    total.setTotal(rsTOTAL.getString("TOTAL"));
+                    Total.add(total);
+                }
+
+                for (int j = 0; j < Vigencias.size(); j++) {
+                    lnt += Leido.get(j).getLeido() + "," + NoLeido.get(j).getNo_Leido() + "," + Total.get(j).getTotal();
+                    if (separar == Vigencias.size()) {
+                        Lecturas.add(lnt);
+                        separar = 1;
+                    } else {
+                        lnt += ",";
+                        separar += 1;
+                    }
+                }
+                lnt = "";
+            }
+
+            File fileLECTURAS = new File("files\\LECTURAS.csv"); //ARCHIVO PARA RETORNAR TODOS LOS DATOS EN UN ARCHIVO csv
+            PrintWriter writeLECTURAS = new PrintWriter(fileLECTURAS); //PARA ESCRIBIR TODOS LOS DATOS EN EL NUEVO ARCHIVO
+
+            estructura = ",";
+
+            separadores = -1;
+
+            for (int j = 0; j < Vigencias.size(); j++) {
+                separadores++;
+            }
+
+            for (VIGENCIAS Vigencia : Vigencias) {
+                estructura += ("VIG "+Vigencia.getVigencia());
+                if (0 < separadores) {
+                    separadores--;
+                    estructura += ",,,";
+                }
+            }
+            writeLECTURAS.println(estructura);
+
+            estructura = "PORCION,";
+
+            separadores = -1;
+
+            for (int j = 0; j < Vigencias.size(); j++) {
+                separadores++;
+            }
+
+            for (VIGENCIAS Vigencia : Vigencias) {
+                estructura += "LEIDO,NO LEIDO,TOTAL ";
+                if (0 < separadores) {
+                    separadores--;
+                    estructura += ",";
+                }
+            }
+            writeLECTURAS.println(estructura);
+
+            for (int j = 0; j < Codigo_porcion.size(); j++) {
+                writeLECTURAS.print(Codigo_porcion.get(j));
+                writeLECTURAS.print("," + Lecturas.get(j));
+                writeLECTURAS.println();
+            }
+            writeLECTURAS.println("Total general");
+            writeLECTURAS.close();
+
+            //EXCEL LECTURAS
+            Workbook wbLECTURAS = new Workbook("files\\LECTURAS.csv"); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
+            Worksheet wsLECTURAS = wbLECTURAS.getWorksheets().get(0); //NUEVA HOJA DE ANOMALIAS PARA EL LIBRO DE ANOMALIAS
+
+            //ASIGNAR CELDAS CON UN TAMAÑO DEFINIDO
+            cells = wsLECTURAS.getCells();
+            cells.setColumnWidth(0, 12);
+            //ALINEAR CELDAS PORCION A LA IZQUIERDA
+            style = wbLECTURAS.createStyle();
+            style.setHorizontalAlignment(TextAlignmentType.LEFT);
+            style.setVerticalAlignment(TextAlignmentType.CENTER);
+            flag.setAlignments(true);
+            range = wsLECTURAS.getCells().createRange("A2:B26");
+            range.applyStyle(style, flag);
+            //ALINEAR CELDAS VIGENCIAS A LA DERECHA
+            style = wbLECTURAS.createStyle();
+            style.setHorizontalAlignment(TextAlignmentType.CENTER);
+            style.setVerticalAlignment(TextAlignmentType.CENTER);
+            flag.setAlignments(true);
+            range = wsLECTURAS.getCells().createRange("B1:BU26");
+            range.applyStyle(style, flag);
+
+            contador = 0;
+            columnas = 1;
+            int tamañoXvigencia = 0;
+            //FUNCION DE SUMAR LAS CELDAS DE CADA ANOMALIA X VIGENCIA EN FILA 28 SEGUN CADA COLUMNA DE VIGENCIA EXISTENTE
+
+            while (contador < Vigencias.size()) {
+                tamañoXvigencia += 3;
+                contador++;
+            }
+
+            tamañoXvigencia = tamañoXvigencia + 1;
+            System.out.println("tamaño: " + tamañoXvigencia);
+            contador = 1;
+            System.out.println("c1:" + contador);
+
+            for(c = 'B'; c <= 'Z'; ++c) {
+                if (contador < tamañoXvigencia && contador <= 26) {
+                    cells.setColumnWidth(columnas, 9.50);
+                    cell = wsLECTURAS.getCells().get(c+"26");
+                    cell.setFormula("=SUM("+c+"3:"+c+"25)");
+                    columnas++;
+                    contador++;
+                    System.out.println("c1:" + contador);
+                }
+            }
+
+            for (c = 'A'; c <= 'Z'; ++c) {
+                if (contador >= 26 && contador < tamañoXvigencia) {
+                    cells.setColumnWidth(columnas, 9.50);
+                    cell = wsLECTURAS.getCells().get("A" + c + "26");
+                    cell.setFormula("=SUM(A" + c + "3:A" + c + "25)");
+                    columnas++;
+                    contador++;
+                    System.out.println("c2:" + contador);
+                }
+                if (contador >= 52 && contador < tamañoXvigencia) {
+                    cells.setColumnWidth(columnas, 9.50);
+                    cell = wsLECTURAS.getCells().get("B" + c + "26");
+                    cell.setFormula("=SUM(B" + c + "3:B" + c + "25)");
+                    columnas++;
+                    contador++;
+                    System.out.println("c3:" + contador);
+                }
+            }
+
+            contador = 0;
+            columnas = 1;
+            fila = 1;
+            columnas = columnas + Vigencias.size();
+
+            //AGREGAR DISEÑO DE COLUMNAS COMO BORDES, TAMAÑO DE LETRA, TIPO DE LETRA Y COLORES
+            for(c = 'A'; c <= 'Z'; ++c) {
+                if (contador < columnas) {
+                    for (fila = 1; fila <= 25; fila++) {
+                        cell = wsCONSUMO_0.getCells().get("A"+fila);
+                        style = cell.getStyle();
+                        style.setPattern(BackgroundType.SOLID);
+                        style.setForegroundColor(com.aspose.cells.Color.fromArgb(142,169,219));
+                        cell.setStyle(style);
+                    }
+                    for (fila = 1; fila <= 25; fila++) {
+                        cell = wsCONSUMO_0.getCells().get(c+""+fila);
+                        style = cell.getStyle();
+                        if (fila == 1) {
+                            style.setPattern(BackgroundType.SOLID);
+                            style.setForegroundColor(com.aspose.cells.Color.fromArgb(142,169,219));
+                            cell.setStyle(style);
+                        }
+
+
+                        border = style.getBorders().getByBorderType(BorderType.BOTTOM_BORDER);
+                        border.setLineStyle(CellBorderType.THIN);
+                        cell.setStyle(style);
+                        border = style.getBorders().getByBorderType(BorderType.LEFT_BORDER);
+                        border.setLineStyle(CellBorderType.THIN);
+                        cell.setStyle(style);
+                        border = style.getBorders().getByBorderType(BorderType.RIGHT_BORDER);
+                        border.setLineStyle(CellBorderType.THIN);
+                        cell.setStyle(style);
+                        border = style.getBorders().getByBorderType(BorderType.TOP_BORDER);
+                        border.setLineStyle(CellBorderType.THIN);
+                        cell.setStyle(style);
+
+                        style.getFont().setName("Calibri");
+                        cell.setStyle(style);
+                        style.getFont().setSize(11);
+                        cell.setStyle(style);
+
+                    }
+                    contador++;
+                    fila = 1;
+                }
+            }
+
+            wbCONSUMO_0.save("files\\LECTURAS.xlsx", SaveFormat.XLSX); //GUARDAR DATOS REPETIDOS EN UN ARCHIVO EXCEL
+            fileLECTURAS.delete(); //ELIMINAR ARCHIVO DE CONSUMO_0.csv
+            //FIN LECTURAS
+
+            //FIN
+
+            //GENERAR INFORME
+            //COMBINAR HOJAS EN EL INFORME
+            Workbook wbINFORME = new Workbook(); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
+            wbINFORME.combine(wbCONSUMO_0);
+            wbINFORME.combine(wbLECTURAS);
+            wbINFORME.combine(wbANOMALIAS);
+            wbINFORME.save("files\\INFORME.xlsx");
+            //ELIMINAR LIBROS COPIADOS
+            File workbook1 = new File("files\\ANOMALIAS.xlsx");
+            workbook1.delete();
+            File workbook2 = new File("files\\CONSUMO_0.xlsx");
+            workbook2.delete();
+            File workbook3 = new File("files\\LECTURAS.xlsx");
+            workbook3.delete();
 
             con.close();
             fCargar.dispose(); // CERRAR PANTALLA DE CARGA
