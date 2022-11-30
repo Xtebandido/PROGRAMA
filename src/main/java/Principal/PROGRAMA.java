@@ -978,11 +978,12 @@ public class PROGRAMA extends JFrame implements Runnable {
                 }
             }
 
-            wbCONSUMO_0.save("files\\LECTURAS.xlsx", SaveFormat.XLSX); //GUARDAR DATOS REPETIDOS EN UN ARCHIVO EXCEL
+            wbLECTURAS.save("files\\LECTURAS.xlsx", SaveFormat.XLSX); //GUARDAR DATOS REPETIDOS EN UN ARCHIVO EXCEL
             fileLECTURAS.delete(); //ELIMINAR ARCHIVO DE CONSUMO_0.csv
             //FIN LECTURAS
 
             //FIN
+
 
             //GENERAR INFORME
             //COMBINAR HOJAS EN EL INFORME
