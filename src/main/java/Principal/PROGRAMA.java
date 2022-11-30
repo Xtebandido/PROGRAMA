@@ -25,13 +25,7 @@ public class PROGRAMA extends JFrame implements Runnable {
     JPanel mainPanel; //PANEL PRINCIPAL
 
     //LOADING
-    JPanel pCargar; //PANEL DE CARGA
-    JFrame fCargar; //FRAME DE CARGA
-    JProgressBar pbCargar; //BARRA DE PROGRESO
-
-    //LECTURAS
-    JPanel tpLecturas; //PANEL DE LECTURAS
-    int btnOPRIMIDO; //ENTERO QUE RETORNA UN VALOR PARA IDENTIFICAR EL BOTON OPRIMIDO MEDIANTE UN SWITCH
+    JDialog dialog; //DIALOGO QUE CONTIENE LA CARGA
 
     //------INSERTAR-----
     JPanel jpUnir; //PANEL DE UNIR DENTRO DE PANEL DE LECTURAS
@@ -77,20 +71,18 @@ public class PROGRAMA extends JFrame implements Runnable {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (PATH != "") {
-                    btnOPRIMIDO = 1;
-                    run();
+                    new Thread(()-> FUN_IMPORT()).start();
                 } else {
                     JOptionPane.showMessageDialog(null, "SELECCIONE UN ARCHIVO");
                 }
             }
         });
 
-        //ACCION BOTON EXPORTAR TOD0
+        //ACCION BOTON EXPORTAR
         btnEXPORT.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                btnOPRIMIDO = 2;
-                run();
+                new Thread(()-> EXPORT()).start();
             }
         });
     }
@@ -99,23 +91,41 @@ public class PROGRAMA extends JFrame implements Runnable {
 
     //METODO LOADING
     public void LOADING() {
-        pbCargar = new JProgressBar(); //NUEVA BARRA DE PROGRESO
-        pbCargar.setIndeterminate(true); //BARRA DE PROGRESO INDETERMINADA
-        pCargar = new JPanel(new BorderLayout()); //NUEVO PANEL DE CARGA
-        fCargar = new JFrame(pCargar.getGraphicsConfiguration()); //NUEVO FRAME DE CARGA
-        //PANEL
-        pCargar.add(new JLabel("CARGANDO REGISTROS. POR FAVOR, ESPERE...\n"), BorderLayout.CENTER);
-        pCargar.add(pbCargar, BorderLayout.AFTER_LAST_LINE);
-        pCargar.setBackground(Color.CYAN);
-        //FRAME
-        fCargar.setUndecorated(true);
-        fCargar.getContentPane().add(pCargar);
-        fCargar.pack();
-        fCargar.setLocationRelativeTo(null);
-        fCargar.setAlwaysOnTop(true);
-        fCargar.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-        fCargar.setVisible(true);
+        JPanel panelLOAD; //PANEL DE CARGA
+        JFrame frameLOAD; //FRAME DE CARGA
+        JProgressBar pbCargar; //BARRA DE PROGRASO
+
+        panelLOAD = new JPanel(new BorderLayout()); //PANEL DE CARGA
+        frameLOAD = new JFrame(panelLOAD.getGraphicsConfiguration()); //NUEVO FRAME DE CARGA
+        //BARRA DE PROGRESO INDEFINIDO
+        pbCargar = new JProgressBar();
+        pbCargar.setIndeterminate(true);
+        //AÑADIR ELEMENTOS AL PANEL
+        panelLOAD.add(new JLabel("CARGANDO REGISTROS... ESTO PODRIA TOMAR UNOS MINUTOS"), BorderLayout.PAGE_START); //AÑADIR UN LABEL AL INICIO DEL PANEL
+        panelLOAD.add(pbCargar, BorderLayout.CENTER); //AÑADIR BARRA DE PROGRESO EN EL CENTRO DEL PANEL
+        JButton btnCANCEL = new JButton("CANCELAR"); //NUEVO BOTON DE CANCELAR
+        panelLOAD.add(btnCANCEL, BorderLayout.PAGE_END); //AÑADIR BOTON CANCELAR AL FINAL DEL PANEL
+        panelLOAD.setBackground(Color.CYAN); //ASIGNAR COLOR AZUL AL PANEL
+        dialog = new JDialog(frameLOAD, true);
+
+        btnCANCEL.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (JOptionPane.showConfirmDialog(null, "¿DESEA CANCELAR EL PROCESO?",
+                        "", JOptionPane.YES_OPTION) == JOptionPane.YES_OPTION){
+                    dialog.dispose();
+                }
+            }
+        });
+
+        dialog.setUndecorated(true);
+        dialog.getContentPane().add(panelLOAD);
+        dialog.pack();
+        dialog.setLocationRelativeTo(null);
+        dialog.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        dialog.setVisible(true);
     }
+
     //SELECCIONAR ARCHIVO
     public void SELECTFILE() {
         File file = null; //NUEVO ARCHIVO DONDE SE GUARDARA EL ARCHIVO QUE SEA SELECCIONADO
@@ -126,18 +136,6 @@ public class PROGRAMA extends JFrame implements Runnable {
         if (file != null) {
             jtxtPATH.setText("" + file); //MOSTRAR LA RUTA DEL ARCHIVO EN EL JTEXTFIELD
             PATH = "" + file;
-        }
-    }
-
-    //METODO run IMPLEMENTANDO EL RUNNABLE PARA INICIAR THREADS/MULTITAREA
-    public void run() {
-        switch (btnOPRIMIDO) {
-            case 1:
-                new Thread(()-> FUN_IMPORT()).start();
-                break;
-            case 2:
-                new Thread(()-> EXPORT()).start();
-                break;
         }
     }
 
@@ -212,7 +210,7 @@ public class PROGRAMA extends JFrame implements Runnable {
 
                             //VALIDAR NUEVAMENTE SI ALGUN OTRO DATO TIENE COMA Y DEVOLVER ERROR
                             if (codigo_porcion.contains(",") || uni_lectura.contains(",") || doc_lectura.contains(",") || cuenta_contrato.contains(",") || medidor.contains(",") || lectura_ant.contains(",") || lectura_act.contains(",") || anomalia_1.contains(",") || anomalia_2.contains(",") || codigo_operario.contains(",") || vigencia.contains(",") || fecha.contains(",") || orden_lectura.contains(",") || leido.contains(",") || calle.contains(",") || edificio.contains(",") || suplemento_casa.contains(",") || interloc_comercial.contains(",") || apellido.contains(",") || nombre.contains(",") || clase_instalacion.contains(",")) {
-                                fCargar.dispose(); //CERRAR LOADING
+                                dialog.dispose(); //CERRAR LOADING
                                 valDATA = true;
                                 DATOCONCOMA += "FILA " + FILA + " → " + codigo_porcion + " | " + uni_lectura + " | " + doc_lectura + " | " + cuenta_contrato + " | " + medidor + " | " + lectura_ant + " | " + lectura_act + " | " + anomalia_1 + " | " + anomalia_2 + " | " + codigo_operario + " | " + vigencia + " | " + fecha + " | " + orden_lectura + " | " + leido + " | " + calle + " | " + edificio + " | " + suplemento_casa + " | " + interloc_comercial + " | " + apellido + " | " + nombre + " | " + clase_instalacion + "\n";
 
@@ -316,7 +314,7 @@ public class PROGRAMA extends JFrame implements Runnable {
 
                         Runtime.getRuntime().exec("cmd /c start cmd.exe /K \" cd " + RutaCARPETA.getAbsolutePath() + " && script.cmd && exit");
 
-                        fCargar.dispose(); //CERRAR LOADING
+                        dialog.dispose(); //CERRAR LOADING
                         if (repetidosFinal.size() == 0) {
                             File RutaREPETIDOS = new File("files\\Repetidos.xlsx");
                             RutaREPETIDOS.delete();
@@ -620,7 +618,7 @@ public class PROGRAMA extends JFrame implements Runnable {
                 Codigo_porcion.add(codpor);
 
                 for (int i = 0; i < Vigencias.size(); i++) {
-                    PreparedStatement psCON_0 = con.prepareStatement("SELECT count(*) AS CONSUMO_0 FROM LECTURAS WHERE codigo_porcion = '" + codpor + "' AND lectura_act - lectura_ant = 0 AND vigencia = '" + Vigencias.get(i).getVigencia() + "'");
+                    PreparedStatement psCON_0 = con.prepareStatement("SELECT count(*) AS CONSUMO_0 FROM LECTURAS WHERE (codigo_porcion = '" + codpor + "') AND (lectura_act - lectura_ant = 0) AND (lectura_act != '' AND lectura_ant != '') AND (vigencia = '" + Vigencias.get(i).getVigencia() + "')");
                     ResultSet rsCON_0 = psCON_0.executeQuery();
                     CON_0 con_0 = new CON_0();
                     con_0.setCon_0(rsCON_0.getString("CONSUMO_0"));
@@ -899,38 +897,35 @@ public class PROGRAMA extends JFrame implements Runnable {
                 contador++;
             }
 
-            tamañoXvigencia = tamañoXvigencia + 1;
-            System.out.println("tamaño: " + tamañoXvigencia);
             contador = 1;
-            System.out.println("c1:" + contador);
-
+            //CELDAS DE LA B A LA Z
             for(c = 'B'; c <= 'Z'; ++c) {
-                if (contador < tamañoXvigencia && contador <= 26) {
+                if (contador <= tamañoXvigencia && contador <= 25) {
                     cells.setColumnWidth(columnas, 9.50);
                     cell = wsLECTURAS.getCells().get(c+"26");
                     cell.setFormula("=SUM("+c+"3:"+c+"25)");
                     columnas++;
                     contador++;
-                    System.out.println("c1:" + contador);
                 }
             }
-
+            //CELDAS DE LA AA HASTA AZ
             for (c = 'A'; c <= 'Z'; ++c) {
-                if (contador >= 26 && contador < tamañoXvigencia) {
+                if (contador >= 25 && contador <= tamañoXvigencia) {
                     cells.setColumnWidth(columnas, 9.50);
                     cell = wsLECTURAS.getCells().get("A" + c + "26");
                     cell.setFormula("=SUM(A" + c + "3:A" + c + "25)");
                     columnas++;
                     contador++;
-                    System.out.println("c2:" + contador);
                 }
-                if (contador >= 52 && contador < tamañoXvigencia) {
+            }
+            //CELDAS DE LA BA HASTA BU
+            for (c = 'A'; c <= 'U'; ++c) {
+                if (contador >= 51 && contador <= tamañoXvigencia) {
                     cells.setColumnWidth(columnas, 9.50);
                     cell = wsLECTURAS.getCells().get("B" + c + "26");
                     cell.setFormula("=SUM(B" + c + "3:B" + c + "25)");
                     columnas++;
                     contador++;
-                    System.out.println("c3:" + contador);
                 }
             }
 
@@ -1005,7 +1000,7 @@ public class PROGRAMA extends JFrame implements Runnable {
             workbook3.delete();
 
             con.close();
-            fCargar.dispose(); // CERRAR PANTALLA DE CARGA
+            dialog.dispose(); // CERRAR PANTALLA DE CARGA
             JOptionPane.showMessageDialog(null, "SE EXPORTO CORRECTAMENTE EL INFORME");
             Runtime.getRuntime().exec("cmd /c start cmd.exe /K \" start " + ARCHIVOS.getAbsolutePath() + " && exit");
 
@@ -1013,9 +1008,16 @@ public class PROGRAMA extends JFrame implements Runnable {
         }
     }
 
+    //METODO RUNNABLE
+    @Override
+    public void run() {
+
+    }
+
     //METODO MAIN
     public static void main(String[] args) {
         new PROGRAMA();
     }
+
 }
 
