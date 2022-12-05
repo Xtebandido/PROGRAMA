@@ -28,11 +28,11 @@ public class PROGRAMA extends JFrame {
     JPanel jpIMPORT; //PANEL DE UNIR DENTRO DE PANEL DE LECTURAS
     //      ->SELECCIONAR
     JButton btnSELECT; //BOTON SELECCIONAR ARCHIVO
+    File file = null; //DATO DONDE SE GUARDARA EL ARCHIVO SELECCIONADO
     JTextField jtxtPATH; //JTEXTFIELD CON EL DATO DE LA RUTA DEL ARCHIVO XLSX SELECCIONADO
     //      ->IMPORTAR
     String PATH = ""; //STRING QUE TIENE EL DATO DE LA RUTA DEL ARCHIVO SELECCIONADO PARA IMPORTAR
     JButton btnIMPORT; //BOTON IMPORTAR
-
     //--------EXPORTAR--------
     JPanel jpEXPORT; //PANEL DE EXPORTAR DENTRO DEL PANEL DE LECTURAS
     JButton btnEXPORT; // BOTON PARA EXPORTAR TODOS LOS DATOS
@@ -107,14 +107,11 @@ public class PROGRAMA extends JFrame {
 
     //METODO SELECCIONAR ARCHIVO
     public void SELECTFILE() {
-        File file = null; //NUEVO ARCHIVO DONDE SE GUARDARA EL ARCHIVO QUE SEA SELECCIONADO
-        JFileChooser fileChooser = new JFileChooser(); //JFILECHOOSER FRAME DONDE SE SELECCIONA UN ARCHIVO
-        fileChooser.showOpenDialog(null); //ABRE DIALOGO PARA SELECCIONAR ARCHIVO
-        file = fileChooser.getSelectedFile(); //GUARDA EL ARCHIVO SELECCIONADO EN LA VARIABLE archivoSeleccionado
-        //SI EL ARCHIVO FUE SELECCIONADO HACER ESTO
-        if (file != null) {
-            jtxtPATH.setText("" + file); //MOSTRAR LA RUTA DEL ARCHIVO EN EL JTEXTFIELD
-            PATH = "" + file;
+        JFileChooser fileChooser = new JFileChooser(file);
+        if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            jtxtPATH.setText(fileChooser.getSelectedFile().toString());
+            file = fileChooser.getCurrentDirectory(); // se guarda la ruta
+            PATH = "" + fileChooser.getSelectedFile().toString();
         }
     }
 
@@ -326,6 +323,7 @@ public class PROGRAMA extends JFrame {
 
                         //LINEA DE COMANDOS EJECUTANDO EL COMANDO (script)
                         Runtime.getRuntime().exec("cmd /c cd " + RutaCARPETA.getAbsolutePath() + " && script.cmd");
+                        Thread.sleep(2*1000);
                         dialog.dispose(); //CERRAR LOADING
 
                         JOptionPane.showMessageDialog(null, "SE IMPORTO CORRECTAMENTE " + DATA.size() + " REGISTROS DE " + fileNAME.getName(), "", JOptionPane.INFORMATION_MESSAGE);
@@ -1162,18 +1160,15 @@ public class PROGRAMA extends JFrame {
 
                     }
 
+                    String limit;
+                    limit = "" + c;
+                    if (limit.equals("U")) {
+                        c = 'Z';
+                    }
+
                     //COMBINAR Y CENTRAR 3 COLUMNAS POR CADA VIGENCIA
                     if ((contador%3) == 0 && contador < tamañoXvigencia) {
                         cells.merge(0, (contador+1), 1, 3);
-                    }
-
-                    String limit;
-                    limit = "" + c;
-                    System.out.println(c);
-                    if (limit.equals("U")) {
-                        System.out.println("U + " + c);
-                        c = 'Z';
-                        System.out.println("Z + " + c);
                     }
 
                 }
