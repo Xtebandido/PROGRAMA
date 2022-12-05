@@ -47,7 +47,6 @@ public class PROGRAMA extends JFrame {
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setVisible(true);
 
         //ACCION BOTON SELECCIONAR ARCHIVO
         btnSELECT.addActionListener(new ActionListener() {
@@ -110,7 +109,7 @@ public class PROGRAMA extends JFrame {
         JFileChooser fileChooser = new JFileChooser(file);
         if (fileChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
             jtxtPATH.setText(fileChooser.getSelectedFile().toString());
-            file = fileChooser.getCurrentDirectory(); // se guarda la ruta
+            file = fileChooser.getCurrentDirectory();
             PATH = "" + fileChooser.getSelectedFile().toString();
         }
     }
@@ -390,6 +389,7 @@ public class PROGRAMA extends JFrame {
                 new Thread(() -> infoANOMALIAS()).start();
                 new Thread(() -> infoCONSUMO_0()).start();
                 new Thread(() -> infoLECTURAS()).start();
+                new Thread(() -> infoCONSUMOS_NEGATIVOS()).start();
 
             } catch (Exception ex) {
             }
@@ -426,13 +426,13 @@ public class PROGRAMA extends JFrame {
             List Descripcion = new ArrayList<String>();
             Descripcion.add("MEDIDOR EN MAL ESTADO");
             Descripcion.add("MEDIDOR MAL INSTALADO");
-            Descripcion.add("NÚMERO DE SERIE DE MEDIDOR NO CORRESPONDE");
+            Descripcion.add("NUMERO DE SERIE DE MEDIDOR NO CORRESPONDE");
             Descripcion.add("MEDIDOR SIN SELLOS O SELLOS ADULTERADOS");
-            Descripcion.add("CAJILLA Y/O TAPA ROTA SUELTA Ó TRABADA");
+            Descripcion.add("CAJILLA Y/O TAPA ROTA SUELTA O TRABADA");
             Descripcion.add("CAJILLA TAPADA O INUNDADA");
             Descripcion.add("SERVICIO DIRECTO");
             Descripcion.add("MEDIDOR RETIRADO");
-            Descripcion.add("ACOMETIDA CON MEDIDOR Y POSIBLE CONEXIÓN FRAUDULENTA");
+            Descripcion.add("ACOMETIDA CON MEDIDOR Y POSIBLE CONEXION FRAUDULENTA");
             Descripcion.add("ESCAPE EN LA ACOMETIDA");
             Descripcion.add("MEDIDOR INSTALADO POR DEBAJO DEL NIVEL NORMAL");
             Descripcion.add("CRUCE DE PLUMAS");
@@ -441,10 +441,10 @@ public class PROGRAMA extends JFrame {
             Descripcion.add("PREDIO DESOCUPADO");
             Descripcion.add("PREDIO NO LOCALIZADO EN TERRENO");
             Descripcion.add("PREDIO FUERA DE RUTA");
-            Descripcion.add("DIRECCIÓN DESACTUALIZADA");
+            Descripcion.add("DIRECCION DESACTUALIZADA");
             Descripcion.add("CLASE DE USO DESACTUALIZADO");
             Descripcion.add("OBRA EN ACABADOS CON TPO");
-            Descripcion.add("PREDIO DEMOLIDO Ó LOTE CON ACOMETIDA");
+            Descripcion.add("PREDIO DEMOLIDO O LOTE CON ACOMETIDA");
             Descripcion.add("SERVICIO SUSPENDIDO");
             Descripcion.add("SECTOR PELIGROSO");
             Descripcion.add("PREDIO OCUPADO");
@@ -1187,6 +1187,194 @@ public class PROGRAMA extends JFrame {
         }
     }
 
+    //METODO informe -> CONSUMOS_NEGATIVOS
+    public void infoCONSUMOS_NEGATIVOS() {
+        valINIT += 1; //INICIA METODO SUMA valINIT PARA VALIDAR AL FINAL DEL METODO SI TODOS LOS METODOS QUE INICIARON AL MISMO TIEMPO TERMINARON Y FINALIZAR LA PANTALLA DE CARGA
+        DATABASE sql = new DATABASE(); //CREA UNA NUEVA CONEXION CON LA BASE DE DATOS
+        Connection con = sql.conectarSQL(); //LLAMA LA CONEXION
+        try {
+            //LISTAR VIGENCIAS
+            List<VIGENCIAS> Vigencias = new ArrayList<VIGENCIAS>();
+            PreparedStatement psVigencia = con.prepareStatement("SELECT DISTINCT vigencia FROM LECTURAS ORDER BY vigencia");
+            ResultSet rsVigencia = psVigencia.executeQuery();
+            while (rsVigencia.next()) {
+                VIGENCIAS Vigencia = new VIGENCIAS();
+                Vigencia.setVigencia(rsVigencia.getString("vigencia"));
+                Vigencias.add(Vigencia);
+            }
+            //LISTAR CODIGO PORCION & CONSUMOS_NEGATIVOS
+            List<CON_NEGATIVOS> Consumos_negativos = new ArrayList<CON_NEGATIVOS>();
+            List Codigo_porcion = new ArrayList<String>();
+            List CodPorXVig = new ArrayList<String>();
+            String codporxvig = "";
+            char c;
+            int separar = 1;
+            for (c = 'A'; c <= 'Z'; ++c) {
+                Consumos_negativos.clear();
+                String codpor = c + "4";
+                if (codpor.equals("I4")) {
+                    c = 'J';
+                    codpor = "J4";
+                } else if (codpor.equals("O4")) {
+                    c = 'P';
+                    codpor = "P4";
+                } else if (codpor.equals("Y4")) {
+                    c = 'Z';
+                    codpor = "Z4";
+                }
+                Codigo_porcion.add(codpor);
+
+                for (int i = 0; i < Vigencias.size(); i++) {
+                    PreparedStatement psCON_NEGATIVOS = con.prepareStatement("SELECT count(*) AS CONSUMO_0 FROM LECTURAS WHERE (codigo_porcion = '" + codpor + "') AND (lectura_act - lectura_ant < 0) AND (lectura_act != '' AND lectura_ant != '') AND (vigencia = '" + Vigencias.get(i).getVigencia() + "')");
+                    ResultSet rsCON_NEGATIVOS = psCON_NEGATIVOS.executeQuery();
+                    CON_NEGATIVOS con_negativos = new CON_NEGATIVOS();
+                    con_negativos.setCon_negativos(rsCON_NEGATIVOS.getString("CONSUMO_0"));
+                    Consumos_negativos.add(con_negativos);
+                }
+
+                for (CON_NEGATIVOS model : Consumos_negativos) {
+                    codporxvig += model.getCon_negativos();
+                    if (separar == Vigencias.size()) {
+                        CodPorXVig.add(codporxvig);
+                        separar = 1;
+                    } else {
+                        codporxvig += ",";
+                        separar += 1;
+                    }
+                }
+                codporxvig = "";
+            }
+
+            File fileCONSUMOS_NEGATIVOS = new File("files\\CONSUMOS_NEGATIVOS.csv"); //ARCHIVO PARA RETORNAR TODOS LOS DATOS EN UN ARCHIVO csv
+            PrintWriter writeCONSUMOS_NEGATIVOS = new PrintWriter(fileCONSUMOS_NEGATIVOS); //PARA ESCRIBIR TODOS LOS DATOS EN EL NUEVO ARCHIVO
+
+            String estructura = "PORCION,";
+
+            int separadores = -1;
+
+            for (int j = 0; j < Vigencias.size(); j++) {
+                separadores++;
+            }
+
+            for (VIGENCIAS Vigencia : Vigencias) {
+                estructura += ("VIG" + Vigencia.getVigencia());
+                if (0 < separadores) {
+                    separadores--;
+                    estructura += ",";
+                }
+            }
+            writeCONSUMOS_NEGATIVOS.println(estructura);
+
+            for (int j = 0; j < Codigo_porcion.size(); j++) {
+                writeCONSUMOS_NEGATIVOS.print(Codigo_porcion.get(j));
+                writeCONSUMOS_NEGATIVOS.print("," + CodPorXVig.get(j));
+                writeCONSUMOS_NEGATIVOS.println();
+            }
+            writeCONSUMOS_NEGATIVOS.println("TOTAL");
+            writeCONSUMOS_NEGATIVOS.close();
+
+            //EXCEL
+            //VARIABLES EXCEL
+            Cell cell; //UNA CELDA
+            Cells cells; //VARIAS CELDAS
+            Style style; //ESTILO
+            StyleFlag flag = new StyleFlag(); //BANDERA
+            Range range; //RANGO
+            Border border; //BORDES
+
+            //LIBRO EXCEL CONSUMO_0
+            Workbook wbCONSUMOS_NEGATIVOS = new Workbook("files\\CONSUMOS_NEGATIVOS.csv"); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
+            Worksheet wsCONSUMOS_NEGATIVOS = wbCONSUMOS_NEGATIVOS.getWorksheets().get(0); //NUEVA HOJA DE ANOMALIAS PARA EL LIBRO DE ANOMALIAS
+
+            //ASIGNAR CELDAS CON UN TAMAÑO DEFINIDO
+            cells = wsCONSUMOS_NEGATIVOS.getCells();
+            cells.setColumnWidth(0, 11);
+            //ALINEAR CELDAS PORCION A LA IZQUIERDA
+            style = wbCONSUMOS_NEGATIVOS.createStyle();
+            style.setHorizontalAlignment(TextAlignmentType.LEFT);
+            style.setVerticalAlignment(TextAlignmentType.CENTER);
+            flag.setAlignments(true);
+            range = wsCONSUMOS_NEGATIVOS.getCells().createRange("A1:B25");
+            range.applyStyle(style, flag);
+            //ALINEAR CELDAS VIGENCIAS A LA DERECHA
+            style = wbCONSUMOS_NEGATIVOS.createStyle();
+            style.setHorizontalAlignment(TextAlignmentType.CENTER);
+            style.setVerticalAlignment(TextAlignmentType.CENTER);
+            flag.setAlignments(true);
+            range = wsCONSUMOS_NEGATIVOS.getCells().createRange("B1:Z25");
+            range.applyStyle(style, flag);
+
+            int contador = 0;
+            int columnas = 1;
+
+            //FUNCION DE SUMAR LAS CELDAS DE CADA ANOMALIA X VIGENCIA EN FILA 28 SEGUN CADA COLUMNA DE VIGENCIA EXISTENTE
+            for (c = 'B'; c <= 'Z'; ++c) {
+                if (contador < Vigencias.size()) {
+                    cells.setColumnWidth(columnas, 10);
+                    cell = wsCONSUMOS_NEGATIVOS.getCells().get(c + "25");
+                    cell.setFormula("=SUM(" + c + "2:" + c + "24)");
+                    columnas++;
+                    contador++;
+                }
+            }
+
+            //AGREGAR DISEÑO DE COLUMNAS COMO BORDES, TAMAÑO DE LETRA, TIPO DE LETRA Y COLORES
+            contador = 0;
+            columnas = 1;
+            columnas = columnas + Vigencias.size();
+
+            for (c = 'A'; c <= 'Z'; ++c) {
+                if (contador < columnas) {
+                    for (int fila = 1; fila <= 25; fila++) {
+                        cell = wsCONSUMOS_NEGATIVOS.getCells().get("A" + fila);
+                        style = cell.getStyle();
+                        style.setPattern(BackgroundType.SOLID);
+                        style.setForegroundColor(com.aspose.cells.Color.fromArgb(142, 169, 219));
+                        cell.setStyle(style);
+                    }
+                    for (int fila = 1; fila <= 25; fila++) {
+                        cell = wsCONSUMOS_NEGATIVOS.getCells().get(c + "" + fila);
+                        style = cell.getStyle();
+                        if (fila == 1) {
+                            style.setPattern(BackgroundType.SOLID);
+                            style.setForegroundColor(com.aspose.cells.Color.fromArgb(142, 169, 219));
+                            cell.setStyle(style);
+                        }
+
+
+                        border = style.getBorders().getByBorderType(BorderType.BOTTOM_BORDER);
+                        border.setLineStyle(CellBorderType.THIN);
+                        cell.setStyle(style);
+                        border = style.getBorders().getByBorderType(BorderType.LEFT_BORDER);
+                        border.setLineStyle(CellBorderType.THIN);
+                        cell.setStyle(style);
+                        border = style.getBorders().getByBorderType(BorderType.RIGHT_BORDER);
+                        border.setLineStyle(CellBorderType.THIN);
+                        cell.setStyle(style);
+                        border = style.getBorders().getByBorderType(BorderType.TOP_BORDER);
+                        border.setLineStyle(CellBorderType.THIN);
+                        cell.setStyle(style);
+
+                        style.getFont().setName("Calibri");
+                        cell.setStyle(style);
+                        style.getFont().setSize(11);
+                        cell.setStyle(style);
+
+                    }
+                    contador++;
+                }
+            }
+            con.close(); //CERRAR CONEXION
+            wbCONSUMOS_NEGATIVOS.save("files\\CONSUMOS_NEGATIVOS.xlsx", SaveFormat.XLSX); //GUARDAR DATOS REPETIDOS EN UN ARCHIVO EXCEL
+            fileCONSUMOS_NEGATIVOS.delete(); //ELIMINAR ARCHIVO DE CONSUMOS_NEGATIVOS.csv
+        } catch (Exception ex) {
+        }
+        valFINISH += 1;
+        if (valINIT == valFINISH) {
+            INFORME();
+        }
+    }
+
     //METODO GENERAR INFORME
     public void INFORME() {
 
@@ -1197,13 +1385,16 @@ public class PROGRAMA extends JFrame {
             File workbook1 = new File("files\\ANOMALIAS.xlsx");
             File workbook2 = new File("files\\CONSUMO_0.xlsx");
             File workbook3 = new File("files\\LECTURAS.xlsx");
+            File workbook4 = new File("files\\CONSUMOS_NEGATIVOS.xlsx");
             Workbook wbCONSUMO_0 = new Workbook(workbook1.getAbsolutePath()); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
             Workbook wbLECTURAS = new Workbook(workbook2.getAbsolutePath()); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
             Workbook wbANOMALIAS = new Workbook(workbook3.getAbsolutePath()); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
+            Workbook wbCONSUMOS_NEGATIVOS = new Workbook(workbook4.getAbsolutePath()); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
 
             //COMBINAR HOJAS EN EL INFORME
             wbINFORME.combine(wbCONSUMO_0);
             wbINFORME.combine(wbLECTURAS);
+            wbINFORME.combine(wbCONSUMOS_NEGATIVOS);
             wbINFORME.combine(wbANOMALIAS);
             wbINFORME.getWorksheets().removeAt(0); //TEMPORAL MIENTRAS ACABA TODAS LAS FUNCIONES PARA EL INFORME
             wbINFORME.save("files\\INFORME.xlsx");
@@ -1211,14 +1402,14 @@ public class PROGRAMA extends JFrame {
             workbook1.delete();
             workbook2.delete();
             workbook3.delete();
+            workbook4.delete();
 
             dialog.dispose(); //CERRAR LOADING
-            JOptionPane.showMessageDialog(null, "SE EXPORTO CORRECTAMENTE EL INFORME");
+            JOptionPane.showMessageDialog(null, "SE EXPORTO CORRECTAMENTE EL INFORME", "",JOptionPane.INFORMATION_MESSAGE);
             File ARCHIVOS = new File("files");
             Runtime.getRuntime().exec("cmd /c start " + ARCHIVOS.getAbsolutePath() + " && exit");
         } catch (Exception ex) {
         }
-
     }
 
     //METODO MAIN
@@ -1227,4 +1418,3 @@ public class PROGRAMA extends JFrame {
     }
 
 }
-
