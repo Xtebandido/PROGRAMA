@@ -7,6 +7,7 @@ import java.sql.SQLException;
 
 public class DATABASE {
     File DB = new File("dbs\\BASE_DE_DATOS");
+    //File DB = new File("P:\\03 COMERCIAL\\13 Fac Lectura\\PROGRAMA\\dbs\\BASE_DE_DATOS");
 
     public Connection conectarSQL() {
         Connection con = null;
