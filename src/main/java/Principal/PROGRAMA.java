@@ -64,7 +64,7 @@ public class PROGRAMA extends JFrame {
     public PROGRAMA() {
         setContentPane(mainPanel);
         setTitle("ACUEDUCTO");
-        setIconImage(new ImageIcon("src/main/resources/Multimedia/icon.png").getImage());
+        setIconImage(new ImageIcon("resources/media/icon.png").getImage());
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -200,7 +200,7 @@ public class PROGRAMA extends JFrame {
         frameDB.setContentPane(mainPanel);
         frameDB.pack();
         frameDB.setLocationRelativeTo(null);
-        frameDB.setIconImage(new ImageIcon("src/main/resources/Multimedia/icon.png").getImage());
+        frameDB.setIconImage(new ImageIcon("resources/media/icon.png").getImage());
         frameDB.setVisible(true);
 
     }
