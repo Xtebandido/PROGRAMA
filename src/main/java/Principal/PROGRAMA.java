@@ -26,6 +26,8 @@ public class PROGRAMA extends JFrame {
     JDialog dialog; //DIALOGO QUE CONTIENE LA PANTALLA DE CARGA
 
     //[LECTURAS]
+    //------DB-------
+    public static File pathDB = new File("dbs\\BASE_DE_DATOS");
     //------INSERTAR-----
     JPanel jpIMPORT; //PANEL IMPORTAR
     JButton btnSELECT; //SELECCIONAR    ->  BOTON SELECCIONAR ARCHIVO
@@ -62,12 +64,13 @@ public class PROGRAMA extends JFrame {
     public PROGRAMA() {
         setContentPane(mainPanel);
         setTitle("ACUEDUCTO");
-        setIconImage(new ImageIcon(getClass().getClassLoader().getResource("Multimedia/Icono.png")).getImage());
+        setIconImage(new ImageIcon("src/main/resources/Multimedia/icon.png").getImage());
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        INIT();
+        PANELDB();
+        //INIT();
 
         //ACCION BOTON SELECCIONAR ARCHIVO
         btnSELECT.addActionListener(new ActionListener() {
@@ -121,6 +124,87 @@ public class PROGRAMA extends JFrame {
         });
     }
 
+    //METODO SELECTDB
+    public void PANELDB() {
+        JFrame frameDB = new JFrame();
+        JPanel panelTITLE = new JPanel();
+        panelTITLE.add(new JLabel("SELECCIONE LA BASE DE DATOS"), BorderLayout.CENTER);
+        panelTITLE.setBackground(Color.lightGray);
+
+        JPanel panelRUTA = new JPanel();
+        JTextField jtxtRUTA_DB = new JTextField();
+        jtxtRUTA_DB.setPreferredSize(new Dimension(300, 20));
+        jtxtRUTA_DB.setEditable(false);
+        jtxtRUTA_DB.setText(pathDB.getAbsolutePath());
+        panelRUTA.add(jtxtRUTA_DB, BorderLayout.CENTER);
+        panelRUTA.setBackground(Color.decode("#8CD1F7"));
+        JButton btnSELECTDB = new JButton("SELECCIONAR");
+        btnSELECTDB.setPreferredSize(new Dimension(115, 20));
+        panelRUTA.add(btnSELECTDB, BorderLayout.AFTER_LAST_LINE);
+        //ACCION BOTON SELECTDB
+        btnSELECTDB.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                boolean archivo_erroneo = true;
+                do {
+                    JnaFileChooser dbChooser = new JnaFileChooser(); //FILECHOOSER PARA SELECCIONAR ARCHIVO
+                    Window w = null;
+                    boolean action = dbChooser.showOpenDialog(w);
+                    if (action) {
+                        if (dbChooser.getSelectedFile().getName().contains(".") == true) {
+                            JOptionPane.showMessageDialog(null, "ERROR: ESTE ARCHIVO NO ES COMPATIBLE. POR FAVOR, SELECCIONE UNA BASE DE DATOS COMPATIBLE", "",JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            jtxtRUTA_DB.setText(dbChooser.getSelectedFile().toString());
+                            pathDB = new File(dbChooser.getSelectedFile().toString());
+                            archivo_erroneo = false;
+                        }
+                    } else {
+                        archivo_erroneo = false;
+                    }
+                } while (archivo_erroneo == true);
+
+            }
+        });
+
+        JPanel panelOPCION = new JPanel();
+        JButton btnACCEPT = new JButton("ACEPTAR");
+        btnACCEPT.setPreferredSize(new Dimension(115, 20));
+        panelOPCION.add(btnACCEPT, BorderLayout.WEST);
+        //ACCION BOTON ACEPTAR
+        btnACCEPT.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                frameDB.dispose();
+                new Thread(() -> INIT()).start();
+            }
+        });
+
+        JButton btnCANCEL = new JButton("CANCELAR");
+        btnCANCEL.setPreferredSize(new Dimension(115, 20));
+        panelOPCION.add(btnCANCEL, BorderLayout.EAST);
+        panelOPCION.setBackground(Color.decode("#8CD1F7"));
+        //ACCION BOTON CANCEL
+        btnCANCEL.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.exit(0);
+            }
+        });
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.add(panelTITLE, BorderLayout.NORTH);
+        mainPanel.add(panelRUTA, BorderLayout.CENTER);
+        mainPanel.add(panelOPCION, BorderLayout.SOUTH);
+
+        frameDB.setUndecorated(true);
+        frameDB.setContentPane(mainPanel);
+        frameDB.pack();
+        frameDB.setLocationRelativeTo(null);
+        frameDB.setIconImage(new ImageIcon("src/main/resources/Multimedia/icon.png").getImage());
+        frameDB.setVisible(true);
+
+    }
+
     //METODO LOADING
     public void LOADING() {
         JPanel panelLOAD; //PANEL DE CARGA
@@ -162,7 +246,6 @@ public class PROGRAMA extends JFrame {
         dialog.getContentPane().add(panelLOAD);
         dialog.pack();
         dialog.setLocationRelativeTo(null);
-        dialog.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         dialog.setVisible(true);
     }
 
@@ -171,6 +254,7 @@ public class PROGRAMA extends JFrame {
         if (INITprogram == 0) {
             new Thread(() -> LOADING()).start();
         }
+
         DATABASE sql = new DATABASE(); //CREA UNA NUEVA CONEXION CON LA BASE DE DATOS
         Connection con = sql.conectarSQL(); //LLAMA LA CONEXION
         try {
@@ -537,14 +621,13 @@ public class PROGRAMA extends JFrame {
 
                         // 3. IMPORTAR LISTA DE DATOS A LA BASE DE DATOS
                         //CREAR ARCHIVO DE COMANDOS CON LAS RUTAS DE LA BASE DE DATOS Y EL ARCHIVO
-                        File RutaDB = new File("dbs\\BASE_DE_DATOS");
                         File RutaCARPETA = new File("lib\\sqlite-tools");
                         File RutaCOMANDOS = new File("lib\\sqlite-tools\\comandos.txt");
                         PrintWriter writeCOMANDOS = new PrintWriter(RutaCOMANDOS); //PARA ESCRIBIR EL COMANDO CON LA RUTA DE LOS DATOS
 
                         //COMANDO (script)
                         writeCOMANDOS.println(".mode csv");
-                        writeCOMANDOS.println(".open '" + RutaDB.getAbsolutePath() + "'");
+                        writeCOMANDOS.println(".open '" + pathDB.getAbsolutePath() + "'");
                         writeCOMANDOS.println(".import '" + RutaDATA.getAbsolutePath() + "' LECTURAS");
                         writeCOMANDOS.println(".shell del '" + RutaDATA.getAbsolutePath() + "'");
                         writeCOMANDOS.close();
@@ -815,9 +898,9 @@ public class PROGRAMA extends JFrame {
 
             String estructura = ""; //ESTRUCTURA PRIMERA FILA TOTAL (SI SELECCIONO MAS DE UN OPERARIO) Y POR OPERARIO
             if (Operarios.size() == 0) {
-                estructura += "TODOS LOS OPERARIOS"; //TOTAL
+                estructura += "TODOS LOS LECTORES"; //TOTAL
             } else if (Operarios.size() > 1) { //SI SE FILTRO MAS DE UN OPERARIO HACER ESTO
-                estructura += "TODOS LOS OPERARIOS FILTRADOS,"; //TOTAL
+                estructura += "TODOS LOS LECTORES FILTRADOS,"; //TOTAL
                 //AGREGAR SEPARADORES DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS DESPUES DE LA PRIMERA CELDA -> TODOS LOS OPERARIOS
                 for (int j = 0; j < Vigencias.size(); j++) { // +1 POR LA COLUMNA PORCION
                     estructura += ",,,";
@@ -825,7 +908,7 @@ public class PROGRAMA extends JFrame {
             }
             //AGREGAR CADA OPERARIO FILTRADO TAMBIEN SEPARANDO DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS
             for (int i = 0; i < Operarios.size(); i++) { //CICLO PARA CADA OPERARIO
-                estructura += "OPERARIO " + Operarios.get(i);
+                estructura += "LECTOR " + Operarios.get(i);
                 if (i < (Operarios.size()-1)) {
                     estructura += ",";
                 }
@@ -1006,7 +1089,7 @@ public class PROGRAMA extends JFrame {
                 if (Operarios.size() == 0) {
                     ch1.getNSeries().get(0).setName("=\"TOTAL LECTURAS LEIDAS\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 } else {
-                    ch1.getNSeries().get(0).setName("=\"TOTAL LECTURAS LEIDAS\nOPERARIO " + Operarios.get(0) + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
+                    ch1.getNSeries().get(0).setName("=\"TOTAL LECTURAS LEIDAS\nLECTOR " + Operarios.get(0) + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 }
                 ch1.getNSeries().get(0).getDataLabels().setShowValue(true); //MOSTRAR LAS ETIQUETAS DE DATOS EN LA GRAFICA
                 ch1.getNSeries().get(0).getDataLabels().setPosition(LabelPositionType.ABOVE); //MOSTRAR LAS ETIQUETAS DE DATOS ENCIMA DE LA LINEA DE GRAFICO
@@ -1017,9 +1100,9 @@ public class PROGRAMA extends JFrame {
                     int idx1 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size()+4), (((Vigencias.size()*i)*3)+i), ((porcionesLocal.size()+3)+16), (((Vigencias.size()*(i+1))*3)+i)+1);
                     Chart ch1 = worksheet.getCharts().get(idx1);
                     if (i == 0) { //SI EL CONTADOR ES DIFERENTE A 0 OSEA A LA PRIMERA TABLA TOTALIZADORA ENTONCES ASIGNARLE EL NOMBRE TOTAL CONSUMO 0
-                        ch1.getTitle().setText("TOTAL LECTURAS LEIDAS\nTODOS LOS OPERARIOS FILTRADOS"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL LECTURAS LEIDAS\nTODOS LOS LECTORES FILTRADOS"); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     } else {
-                        ch1.getTitle().setText("TOTAL LECTURAS LEIDAS \nOPERARIO (" + Operarios.get(i-1) +")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL LECTURAS LEIDAS \nLECTOR (" + Operarios.get(i-1) +")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     }
                     ch1.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
                     ch1.getTitle().getFont().setBold(true); //ASIGNARLE NEGRILLA A LA LETRA
@@ -1251,9 +1334,9 @@ public class PROGRAMA extends JFrame {
 
             String estructura = ""; //ESTRUCTURA PRIMERA FILA TOTAL (SI SELECCIONO MAS DE UN OPERARIO) Y POR OPERARIO
             if (Operarios.size() == 0) {
-                estructura += "TODOS LOS OPERARIOS"; //TOTAL
+                estructura += "TODOS LOS LECTORES"; //TOTAL
             } else if (Operarios.size() > 1) { //SI SE FILTRO MAS DE UN OPERARIO HACER ESTO
-                estructura += "TODOS LOS OPERARIOS FILTRADOS"; //TOTAL
+                estructura += "TODOS LOS LECTORES FILTRADOS"; //TOTAL
                 //AGREGAR SEPARADORES DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS DESPUES DE LA PRIMERA CELDA -> TODOS LOS OPERARIOS
                 for (int j = 0; j < Vigencias.size()+1; j++) { // +1 POR LA COLUMNA PORCION
                     estructura += ",";
@@ -1261,7 +1344,7 @@ public class PROGRAMA extends JFrame {
             }
             //AGREGAR CADA OPERARIO FILTRADO TAMBIEN SEPARANDO DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS
             for (int i = 0; i < Operarios.size(); i++) { //CICLO PARA CADA OPERARIO
-                estructura += "OPERARIO " + Operarios.get(i);
+                estructura += "LECTOR " + Operarios.get(i);
                 for (int j = 0; j < Vigencias.size()+1; j++) { // +1 POR LA COLUMNA PORCION
                     if (i < (Operarios.size()-1)) {
                         estructura += ",";
@@ -1400,7 +1483,7 @@ public class PROGRAMA extends JFrame {
                 if (Operarios.size() == 0) {
                     ch1.getNSeries().get(0).setName("=\"TOTAL CONSUMO 0 LECTURA\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 } else {
-                    ch1.getNSeries().get(0).setName("=\"TOTAL CONSUMO 0 LECTURA\nOPERARIO " + Operarios.get(0) + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
+                    ch1.getNSeries().get(0).setName("=\"TOTAL CONSUMO 0 LECTURA\nLECTOR " + Operarios.get(0) + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 }
 
                 ch1.getNSeries().get(0).setValues("=B"+(porcionesLocal.size()+3)+":" + lastCell + +(porcionesLocal.size()+3)); //SELECCIONAR LOS DATOS DE LA SERIE QUE EN ESTE CASO SERIA EL VALOR TOTAL POR CADA VIGENCIA
@@ -1413,9 +1496,9 @@ public class PROGRAMA extends JFrame {
                     int idx1 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size()+3), (Vigencias.size()*i+i), ((porcionesLocal.size()+3)+16), (Vigencias.size()+1)*(i+1));
                     Chart ch1 = worksheet.getCharts().get(idx1);
                     if (i == 0) { //SI EL CONTADOR ES DIFERENTE A 0 OSEA A LA PRIMERA TABLA TOTALIZADORA ENTONCES ASIGNARLE EL NOMBRE TOTAL CONSUMO 0
-                        ch1.getTitle().setText("TOTAL CONSUMO 0 LECTURA\nTODOS LOS OPERARIOS FILTRADOS"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL CONSUMO 0 LECTURA\nTODOS LOS LECTORES FILTRADOS"); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     } else {
-                        ch1.getTitle().setText("TOTAL CONSUMO 0 LECTURA \nOPERARIO (" + Operarios.get(i-1) +")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL CONSUMO 0 LECTURA \nLECTOR (" + Operarios.get(i-1) +")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     }
                     ch1.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
                     ch1.getTitle().getFont().setBold(true); //ASIGNARLE NEGRILLA A LA LETRA
@@ -1638,9 +1721,9 @@ public class PROGRAMA extends JFrame {
 
             String estructura = ""; //ESTRUCTURA PRIMERA FILA TOTAL (SI SELECCIONO MAS DE UN OPERARIO) Y POR OPERARIO
             if (Operarios.size() == 0) {
-                estructura += "TODOS LOS OPERARIOS"; //TOTAL
+                estructura += "TODOS LOS LECTORES"; //TOTAL
             } else if (Operarios.size() > 1) { //SI SE FILTRO MAS DE UN OPERARIO HACER ESTO
-                estructura += "TODOS LOS OPERARIOS FILTRADOS"; //TOTAL
+                estructura += "TODOS LOS LECTORES FILTRADOS"; //TOTAL
                 //AGREGAR SEPARADORES DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS DESPUES DE LA PRIMERA CELDA -> TODOS LOS OPERARIOS
                 for (int j = 0; j < Vigencias.size()+1; j++) { // +1 POR LA COLUMNA PORCION
                     estructura += ",";
@@ -1648,7 +1731,7 @@ public class PROGRAMA extends JFrame {
             }
             //AGREGAR CADA OPERARIO FILTRADO TAMBIEN SEPARANDO DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS
             for (int i = 0; i < Operarios.size(); i++) { //CICLO PARA CADA OPERARIO
-                estructura += "OPERARIO " + Operarios.get(i);
+                estructura += "LECTOR " + Operarios.get(i);
                 for (int j = 0; j < Vigencias.size()+1; j++) { // +1 POR LA COLUMNA PORCION
                     if (i < (Operarios.size()-1)) {
                         estructura += ",";
@@ -1786,7 +1869,7 @@ public class PROGRAMA extends JFrame {
                 if (Operarios.size() == 0) {
                     ch1.getNSeries().get(0).setName("=\"TOTAL CONSUMOS NEGATIVOS LECTURA\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 } else {
-                    ch1.getNSeries().get(0).setName("=\"TOTAL CONSUMOS NEGATIVOS LECTURA\nOPERARIO " + Operarios.get(0) + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
+                    ch1.getNSeries().get(0).setName("=\"TOTAL CONSUMOS NEGATIVOS LECTURA\nLECTOR " + Operarios.get(0) + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 }
                 ch1.getNSeries().get(0).setValues("=B"+(porcionesLocal.size()+3)+":" + lastCell + +(porcionesLocal.size()+3)); //SELECCIONAR LOS DATOS DE LA SERIE QUE EN ESTE CASO SERIA EL VALOR TOTAL POR CADA VIGENCIA
                 ch1.getNSeries().get(0).getDataLabels().setShowValue(true); //MOSTRAR LAS ETIQUETAS DE DATOS EN LA GRAFICA
@@ -1798,9 +1881,9 @@ public class PROGRAMA extends JFrame {
                     int idx1 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size()+3), (Vigencias.size()*i+i), ((porcionesLocal.size()+3)+16), (Vigencias.size()+1)*(i+1));
                     Chart ch1 = worksheet.getCharts().get(idx1);
                     if (i == 0) { //SI EL CONTADOR ES DIFERENTE A 0 OSEA A LA PRIMERA TABLA TOTALIZADORA ENTONCES ASIGNARLE EL NOMBRE TOTAL CONSUMO 0
-                        ch1.getTitle().setText("TOTAL CONSUMOS NEGATIVOS LECTURA\nTODOS LOS OPERARIOS FILTRADOS"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL CONSUMOS NEGATIVOS LECTURA\nTODOS LOS LECTORES FILTRADOS"); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     } else {
-                        ch1.getTitle().setText("TOTAL CONSUMOS NEGATIVOS LECTURA \nOPERARIO (" + Operarios.get(i-1) +")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL CONSUMOS NEGATIVOS LECTURA \nLECTOR (" + Operarios.get(i-1) +")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     }
                     ch1.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
                     ch1.getTitle().getFont().setBold(true); //ASIGNARLE NEGRILLA A LA LETRA
@@ -1991,9 +2074,9 @@ public class PROGRAMA extends JFrame {
 
             String estructura = ""; //ESTRUCTURA PRIMERA FILA TOTAL (SI SELECCIONO MAS DE UN OPERARIO) Y POR OPERARIO
             if (Operarios.size() == 0) {
-                estructura += "TODOS LOS OPERARIOS " + namePORCIONES; //TOTAL
+                estructura += "TODOS LOS LECTORES " + namePORCIONES; //TOTAL
             } else if (Operarios.size() > 1) { //SI SE FILTRO MAS DE UN OPERARIO HACER ESTO
-                estructura += "TODOS LOS OPERARIOS FILTRADOS " + namePORCIONES; //TOTAL
+                estructura += "TODOS LOS LECTORES FILTRADOS " + namePORCIONES; //TOTAL
                 //AGREGAR SEPARADORES DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS DESPUES DE LA PRIMERA CELDA -> TODOS LOS OPERARIOS
                 for (int j = 0; j < Vigencias.size()+2; j++) { // +1 POR LA COLUMNA PORCION
                     estructura += ",";
@@ -2001,7 +2084,7 @@ public class PROGRAMA extends JFrame {
             }
             //AGREGAR CADA OPERARIO FILTRADO TAMBIEN SEPARANDO DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS
             for (int i = 0; i < Operarios.size(); i++) { //CICLO PARA CADA OPERARIO
-                estructura += "OPERARIO " + Operarios.get(i) + " " + namePORCIONES;
+                estructura += "LECTOR " + Operarios.get(i) + " " + namePORCIONES;
                 for (int j = 0; j < Vigencias.size()+2; j++) { // +1 POR LA COLUMNA PORCION
                     if (i < (Operarios.size()-1)) {
                         estructura += ",";
@@ -2174,7 +2257,7 @@ public class PROGRAMA extends JFrame {
                 if (Operarios.size() == 0) {
                     ch1.getNSeries().get(0).setName("=\"TOTAL ANOMALIAS (SIN ANOMALIA 18 Y 28) LECTURA" + namePORCIONES + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 } else {
-                    ch1.getNSeries().get(0).setName("=\"TOTAL ANOMALIAS (SIN ANOMALIA 18 Y 28) LECTURA\nOPERARIO " + Operarios.get(0) + namePORCIONES + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
+                    ch1.getNSeries().get(0).setName("=\"TOTAL ANOMALIAS (SIN ANOMALIA 18 Y 28) LECTURA\nLECTOR " + Operarios.get(0) + namePORCIONES + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 }
                 ch1.getNSeries().get(0).setValues("=C30:" + lastCell + "30"); //SELECCIONAR LOS DATOS DE LA SERIE QUE EN ESTE CASO SERIA EL VALOR TOTAL POR CADA VIGENCIA
                 ch1.getNSeries().get(0).getDataLabels().setShowValue(true); //MOSTRAR LAS ETIQUETAS DE DATOS EN LA GRAFICA
@@ -2191,7 +2274,7 @@ public class PROGRAMA extends JFrame {
                 if (Operarios.size() == 0) {
                     ch2.getNSeries().get(0).setName("=\"TOTAL ANOMALIA 18 PREDIO DESOCUPADO LECTURA" + namePORCIONES + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 } else {
-                    ch2.getNSeries().get(0).setName("=\"TOTAL ANOMALIA 18 PREDIO DESOCUPADO LECTURA\nOPERARIO " + Operarios.get(0) + namePORCIONES  + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
+                    ch2.getNSeries().get(0).setName("=\"TOTAL ANOMALIA 18 PREDIO DESOCUPADO LECTURA\nLECTOR " + Operarios.get(0) + namePORCIONES  + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 }
                 ch2.getNSeries().get(0).setValues("=C17:" + lastCell + "17"); //SELECCIONAR LOS DATOS DE LA SERIE QUE EN ESTE CASO SERIA EL VALOR TOTAL POR CADA VIGENCIA
                 ch2.getNSeries().get(0).getDataLabels().setShowValue(true); //MOSTRAR LAS ETIQUETAS DE DATOS EN LA GRAFICA
@@ -2208,7 +2291,7 @@ public class PROGRAMA extends JFrame {
                 if (Operarios.size() == 0) {
                     ch3.getNSeries().get(0).setName("=\"TOTAL ANOMALIA 28 PREDIO OCUPADO LECTURA" + namePORCIONES + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 } else {
-                    ch3.getNSeries().get(0).setName("=\"TOTAL ANOMALIA 28 PREDIO OCUPADO LECTURA\nOPERARIO " + Operarios.get(0) + namePORCIONES  + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
+                    ch3.getNSeries().get(0).setName("=\"TOTAL ANOMALIA 28 PREDIO OCUPADO LECTURA\nLECTOR " + Operarios.get(0) + namePORCIONES  + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 }
                 ch3.getNSeries().get(0).setValues("=C26:" + lastCell + "26"); //SELECCIONAR LOS DATOS DE LA SERIE QUE EN ESTE CASO SERIA EL VALOR TOTAL POR CADA VIGENCIA
                 ch3.getNSeries().get(0).getDataLabels().setShowValue(true); //MOSTRAR LAS ETIQUETAS DE DATOS EN LA GRAFICA
@@ -2229,13 +2312,13 @@ public class PROGRAMA extends JFrame {
                     int idx3 = worksheet.getCharts().add(ChartType.LINE, 54, (Vigencias.size()*i+i)+i, 66, (Vigencias.size()+2)*(i+1));
                     Chart ch3 = worksheet.getCharts().get(idx3);
                     if (i == 0) { //SI EL CONTADOR ES DIFERENTE A 0 OSEA A LA PRIMERA TABLA TOTALIZADORA ENTONCES ASIGNARLE EL NOMBRE TOTAL CONSUMO 0
-                        ch1.getTitle().setText("TOTAL ANOMALIAS (SIN ANOMALIA 18 Y 28) LECTURA\n TODOS LOS OPERARIOS FILTRADOS" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
-                        ch2.getTitle().setText("TOTAL ANOMALIAS 18 PREDIO DESOCUPADO LECTURA\n TODOS LOS OPERARIOS FILTRADOS" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
-                        ch3.getTitle().setText("TOTAL ANOMALIAS 28 PREDIO OCUPADO LECTURA\n TODOS LOS OPERARIOS FILTRADOS" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL ANOMALIAS (SIN ANOMALIA 18 Y 28) LECTURA\n TODOS LOS LECTORES FILTRADOS" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch2.getTitle().setText("TOTAL ANOMALIAS 18 PREDIO DESOCUPADO LECTURA\n TODOS LOS LECTORES FILTRADOS" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch3.getTitle().setText("TOTAL ANOMALIAS 28 PREDIO OCUPADO LECTURA\n TODOS LOS LECTORES FILTRADOS" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     } else {
-                        ch1.getTitle().setText("TOTAL ANOMALIAS (SIN ANOMALIA 18 Y 28) LECTURA \nOPERARIO (" + Operarios.get(i-1) +")" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
-                        ch2.getTitle().setText("TOTAL ANOMALIAS 18 PREDIO DESOCUPADO LECTURA \nOPERARIO (" + Operarios.get(i-1) +")" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
-                        ch3.getTitle().setText("TOTAL ANOMALIAS 28 PREDIO OCUPADO LECTURA \nOPERARIO (" + Operarios.get(i-1) +")" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL ANOMALIAS (SIN ANOMALIA 18 Y 28) LECTURA \nLECTOR (" + Operarios.get(i-1) +")" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch2.getTitle().setText("TOTAL ANOMALIAS 18 PREDIO DESOCUPADO LECTURA \nLECTOR (" + Operarios.get(i-1) +")" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch3.getTitle().setText("TOTAL ANOMALIAS 28 PREDIO OCUPADO LECTURA \nLECTOR (" + Operarios.get(i-1) +")" + namePORCIONES); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     }
                     ch1.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
                     ch1.getTitle().getFont().setBold(true); //ASIGNARLE NEGRILLA A LA LETRA
@@ -2494,9 +2577,9 @@ public class PROGRAMA extends JFrame {
 
             String estructura = ""; //ESTRUCTURA PRIMERA FILA TOTAL (SI SELECCIONO MAS DE UN OPERARIO) Y POR OPERARIO
             if (Operarios.size() == 0) {
-                estructura += "TODOS LOS OPERARIOS"; //TOTAL
+                estructura += "TODOS LOS LECTORES"; //TOTAL
             } else if (Operarios.size() > 1) { //SI SE FILTRO MAS DE UN OPERARIO HACER ESTO
-                estructura += "TODOS LOS OPERARIOS FILTRADOS,"; //TOTAL
+                estructura += "TODOS LOS LECTORES FILTRADOS,"; //TOTAL
                 //AGREGAR SEPARADORES DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS DESPUES DE LA PRIMERA CELDA -> TODOS LOS OPERARIOS
                 for (int j = 0; j < Vigencias.size(); j++) { // +1 POR LA COLUMNA PORCION
                     estructura += ",,,";
@@ -2504,7 +2587,7 @@ public class PROGRAMA extends JFrame {
             }
             //AGREGAR CADA OPERARIO FILTRADO TAMBIEN SEPARANDO DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS
             for (int i = 0; i < Operarios.size(); i++) { //CICLO PARA CADA OPERARIO
-                estructura += "OPERARIO " + Operarios.get(i);
+                estructura += "LECTOR " + Operarios.get(i);
                 if (i < (Operarios.size()-1)) {
                     estructura += ",";
                 }
@@ -2714,7 +2797,7 @@ public class PROGRAMA extends JFrame {
                 if (Operarios.size() == 0) {
                     ch1.getNSeries().get(0).setName("=\"TOTAL % INEFICIENCIA\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 } else {
-                    ch1.getNSeries().get(0).setName("=\"TOTAL % INEFICIENCIA\nOPERARIO " + Operarios.get(0) + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
+                    ch1.getNSeries().get(0).setName("=\"TOTAL % INEFICIENCIA\nLECTOR " + Operarios.get(0) + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
                 }
                 ch1.getNSeries().get(0).getDataLabels().setShowValue(true); //MOSTRAR LAS ETIQUETAS DE DATOS EN LA GRAFICA
                 ch1.getNSeries().get(0).getDataLabels().setPosition(LabelPositionType.ABOVE); //MOSTRAR LAS ETIQUETAS DE DATOS ENCIMA DE LA LINEA DE GRAFICO
@@ -2725,9 +2808,9 @@ public class PROGRAMA extends JFrame {
                     int idx1 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size()+4), (((Vigencias.size()*i)*3)+i), ((porcionesLocal.size()+3)+16), (((Vigencias.size()*(i+1))*3)+i)+1);
                     Chart ch1 = worksheet.getCharts().get(idx1);
                     if (i == 0) { //SI EL CONTADOR ES DIFERENTE A 0 OSEA A LA PRIMERA TABLA TOTALIZADORA ENTONCES ASIGNARLE EL NOMBRE TOTAL CONSUMO 0
-                        ch1.getTitle().setText("TOTAL % INEFICIENCIA\nTODOS LOS OPERARIOS FILTRADOS"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL % INEFICIENCIA\nTODOS LOS LECTORES FILTRADOS"); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     } else {
-                        ch1.getTitle().setText("TOTAL % INEFICIENCIA\nOPERARIO (" + Operarios.get(i-1) +")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL % INEFICIENCIA\nLECTOR (" + Operarios.get(i-1) +")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     }
                     ch1.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
                     ch1.getTitle().getFont().setBold(true); //ASIGNARLE NEGRILLA A LA LETRA
