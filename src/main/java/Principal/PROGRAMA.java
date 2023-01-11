@@ -27,7 +27,7 @@ public class PROGRAMA extends JFrame {
 
     //[LECTURAS]
     //------DB-------
-    public static File pathDB = new File("dbs\\BASE_DE_DATOS");
+    public static File pathDB = new File("dbs\\BASE_DE_DATOS.db");
     //------INSERTAR-----
     JPanel jpIMPORT; //PANEL IMPORTAR
     JButton btnSELECT; //SELECCIONAR    ->  BOTON SELECCIONAR ARCHIVO
@@ -42,6 +42,11 @@ public class PROGRAMA extends JFrame {
     JPanel jpSCROLL_CODPOR = new JPanel(); //PANEL DONDE SE ENCUENTRA LOS CHECKBOX CON DESPLAZAMIENTOS
     JPopupMenu puMENU_CODPOR = new JPopupMenu(); //POPUPMENU CON EL panelSCROLL
     JCheckBox[] CHBX_CODPOR; //CHECKBOXS CON LOS DATOS
+    List<String> Rutas; //LISTA CON LOS DATOS TIPO STRING
+    JButton btnFILTER_RUTAS;
+    JPanel jpSCROLL_RUTAS = new JPanel(); //PANEL DONDE SE ENCUENTRA LOS CHECKBOX CON DESPLAZAMIENTOS
+    JPopupMenu puMENU_RUTAS = new JPopupMenu(); //POPUPMENU CON EL panelSCROLL
+    JCheckBox[] CHBX_RUTAS; //CHECKBOXS CON LOS DATOS
     List<String> Operarios; //LISTA CON LOS DATOS TIPO STRING
     JButton btnFILTER_CODOPE; //BOTON PARA FILTRAR LA PORCION
     JPanel jpSCROLL_CODOPE = new JPanel(); //PANEL DONDE SE ENCUENTRA LOS CHECKBOX CON DESPLAZAMIENTOS
@@ -56,6 +61,7 @@ public class PROGRAMA extends JFrame {
     JPanel jpEXPORT; //PANEL DE EXPORTAR DENTRO DEL PANEL DE LECTURAS
     JButton btnEXPORT; // BOTON PARA EXPORTAR TODOS LOS DATOS
 
+
     //--------VALIDAR INICIO Y FIN DE PROCESOS--------
     int INITprogram;
     int valFINISH;
@@ -66,11 +72,11 @@ public class PROGRAMA extends JFrame {
         setTitle("ACUEDUCTO");
         setIconImage(new ImageIcon("resources/media/icon.png").getImage());
         setExtendedState(JFrame.MAXIMIZED_BOTH);
+        //setResizable(false);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
         PANELDB();
-        //INIT();
 
         //ACCION BOTON SELECCIONAR ARCHIVO
         btnSELECT.addActionListener(new ActionListener() {
@@ -97,6 +103,13 @@ public class PROGRAMA extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 puMENU_CODPOR.show(btnFILTER_CODPOR, 0, btnFILTER_CODPOR.getHeight());
+            }
+        });
+        //BOTON FILTRAR RUTAS
+        btnFILTER_RUTAS.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                puMENU_RUTAS.show(btnFILTER_RUTAS, 0, btnFILTER_RUTAS.getHeight());
             }
         });
         //BOTON FILTRAR OPERARIO
@@ -148,16 +161,13 @@ public class PROGRAMA extends JFrame {
                 boolean archivo_erroneo = true;
                 do {
                     JnaFileChooser dbChooser = new JnaFileChooser(); //FILECHOOSER PARA SELECCIONAR ARCHIVO
+                    dbChooser.addFilter("Database", "db"); //FILTRO PARA SELECCIONAR UNICAMENTE ARCHIVOS EXCEL
                     Window w = null;
                     boolean action = dbChooser.showOpenDialog(w);
                     if (action) {
-                        if (dbChooser.getSelectedFile().getName().contains(".") == true) {
-                            JOptionPane.showMessageDialog(null, "ERROR: ESTE ARCHIVO NO ES COMPATIBLE. POR FAVOR, SELECCIONE UNA BASE DE DATOS COMPATIBLE", "",JOptionPane.INFORMATION_MESSAGE);
-                        } else {
                             jtxtRUTA_DB.setText(dbChooser.getSelectedFile().toString());
                             pathDB = new File(dbChooser.getSelectedFile().toString());
                             archivo_erroneo = false;
-                        }
                     } else {
                         archivo_erroneo = false;
                     }
@@ -174,8 +184,14 @@ public class PROGRAMA extends JFrame {
         btnACCEPT.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                frameDB.dispose();
-                new Thread(() -> INIT()).start();
+                if (pathDB.exists()) {
+                    frameDB.dispose();
+                    new Thread(() -> INIT()).start();
+                } else {
+                    JOptionPane.showMessageDialog(null, "SELECCIONE UN ARCHIVO VALIDO", "", JOptionPane.INFORMATION_MESSAGE);
+                }
+
+
             }
         });
 
@@ -266,18 +282,6 @@ public class PROGRAMA extends JFrame {
                 String VIG = rsVigencia.getString("vigencia");
                 Vigencias.add(VIG);
             }
-            int vigINICIAL;
-            int vigFINAL = Integer.parseInt(Vigencias.get(Vigencias.size()-1));
-
-            for (int j = 0; j < Vigencias.size(); j++) {
-                vigINICIAL = Integer.parseInt(Vigencias.get(j));
-                if ((vigFINAL - vigINICIAL) >= 400) {
-                    Statement delete = con.createStatement();
-                    delete.executeUpdate("DELETE FROM LECTURAS WHERE vigencia = '" + vigINICIAL + "'");
-                    Vigencias.remove(j);
-                    j--;
-                }
-            }
 
             Collections.sort(Vigencias, Collections.reverseOrder()); //ORDENAR VIGENCIAS DE MENOR A MAYOR
 
@@ -293,7 +297,7 @@ public class PROGRAMA extends JFrame {
             JScrollPane jspVIG = new JScrollPane(jpCHECK_VIG); //NUEVO SCROLLPANE PARA EL panelSCROLL
             jspVIG.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS); //ASIGNAR EL SCROLL VERTICAL
             jspVIG.getVerticalScrollBar().setUnitIncrement(145);
-            jspVIG.setPreferredSize(new Dimension (258, 150)); //ASIGNAR EL TAMAÑO DE LA VENTANA DEL SCROLL
+            jspVIG.setPreferredSize(new Dimension (200, 150)); //ASIGNAR EL TAMAÑO DE LA VENTANA DEL SCROLL
 
             jpSCROLL_VIG.add(jspVIG);
             puMENU_VIG.add(jpSCROLL_VIG);
@@ -323,7 +327,7 @@ public class PROGRAMA extends JFrame {
             JScrollPane jspCODOPE = new JScrollPane(jpCHECK_CODOPE); //NUEVO SCROLLPANE PARA EL panelSCROLL
             jspCODOPE.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS); //ASIGNAR EL SCROLL VERTICAL
             jspCODOPE.getVerticalScrollBar().setUnitIncrement(20);
-            jspCODOPE.setPreferredSize(new Dimension (249, 150)); //ASIGNAR EL TAMAÑO DE LA VENTANA DEL SCROLL
+            jspCODOPE.setPreferredSize(new Dimension (174, 150)); //ASIGNAR EL TAMAÑO DE LA VENTANA DEL SCROLL
 
             jpSCROLL_CODOPE.add(jspCODOPE);
             puMENU_CODOPE.add(jpSCROLL_CODOPE);
@@ -388,10 +392,36 @@ public class PROGRAMA extends JFrame {
             JScrollPane jspCODPOR = new JScrollPane(jpCHECK_CODPOR); //NUEVO SCROLLPANE PARA EL panelSCROLL
             jspCODPOR.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS); //ASIGNAR EL SCROLL VERTICAL
             jspCODPOR.getVerticalScrollBar().setUnitIncrement(20);
-            jspCODPOR.setPreferredSize(new Dimension (244, 150)); //ASIGNAR EL TAMAÑO DE LA VENTANA DEL SCROLL
+            jspCODPOR.setPreferredSize(new Dimension (185, 150)); //ASIGNAR EL TAMAÑO DE LA VENTANA DEL SCROLL
 
             jpSCROLL_CODPOR.add(jspCODPOR);
             puMENU_CODPOR.add(jpSCROLL_CODPOR);
+
+            //PORCION
+            List<String> Rutas = new ArrayList<String>(); //NUEVA LISTA DE VIGENCIAS
+            PreparedStatement psRutas = con.prepareStatement("SELECT DISTINCT uni_lectura FROM LECTURAS ORDER BY uni_lectura"); //QUERY
+            ResultSet rsRutas = psRutas.executeQuery(); //RESULTADOS DE LA CONSULTA
+            while (rsRutas.next()) {
+                String RUTAS = rsRutas.getString("uni_lectura");
+                Rutas.add(RUTAS);
+            }
+
+            JPanel jpCHECK_RUTAS = new JPanel(); //NUEVO PANEL PARA GUARDAR EL PANEL SCROLL
+            jpCHECK_RUTAS.setLayout(new BoxLayout(jpCHECK_RUTAS, BoxLayout.Y_AXIS)); //ASIGNAR AL PANEL LOS ELEMENTOS DE FORMA VERTICAL EN EL EJE Y
+            //CICLO QUE TOMA LOS ELEMENTOS DE LA LISTA Y LOS AGREGA AL CHECKBOX Y LOS ELEMENTOS SON AGREGADOS AL PANEL
+            CHBX_RUTAS = new JCheckBox[Rutas.size()];; //NUEVO ARRAY DE CHECKBOX
+            for (int j = 0; j < Rutas.size(); j++) {
+                CHBX_RUTAS[j] = new JCheckBox(Rutas.get(j));
+                jpCHECK_RUTAS.add(CHBX_RUTAS[j]);
+            }
+
+            JScrollPane jspRUTAS = new JScrollPane(jpCHECK_RUTAS); //NUEVO SCROLLPANE PARA EL panelSCROLL
+            jspRUTAS.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS); //ASIGNAR EL SCROLL VERTICAL
+            jspRUTAS.getVerticalScrollBar().setUnitIncrement(20);
+            jspRUTAS.setPreferredSize(new Dimension (170, 150)); //ASIGNAR EL TAMAÑO DE LA VENTANA DEL SCROLL
+
+            jpSCROLL_RUTAS.add(jspRUTAS);
+            puMENU_RUTAS.add(jpSCROLL_RUTAS);
 
             con.close();
         } catch (Exception ex) {
@@ -494,6 +524,12 @@ public class PROGRAMA extends JFrame {
                         interloc_comercial = interloc_comercial.replaceAll(",", "");
                         apellido = apellido.replaceAll(",", "");
                         nombre = nombre.replaceAll(",", "");
+
+                        if (codigo_porcion == "" || uni_lectura == "" || codigo_operario == "" || vigencia == "") {
+                            dialog.dispose();
+                            JOptionPane.showMessageDialog(null, "ERROR: VERIFIQUE QUE LOS CAMPOS CODIGO PORCION, UNI LECTURA, CODIGO OPERARIO O VIGENCIA NO SE ENCUENTREN VACIOS", "", JOptionPane.INFORMATION_MESSAGE);
+                            return;
+                        }
 
                         //SI EL DATO TIENE COMILLAS, ELIMINARLAS
                         codigo_porcion = codigo_porcion.replaceAll("\"", "");
@@ -639,6 +675,8 @@ public class PROGRAMA extends JFrame {
                         //RESETEAR LOS DATOS PARA FILTRAR Y GENERAR INFORME E INICIAR METODO INIT
                         jpSCROLL_CODPOR.removeAll();
                         puMENU_CODPOR.removeAll();
+                        jpSCROLL_RUTAS.removeAll();
+                        puMENU_RUTAS.removeAll();
                         jpSCROLL_CODOPE.removeAll();
                         puMENU_CODOPE.removeAll();
                         jpSCROLL_VIG.removeAll();
@@ -651,8 +689,6 @@ public class PROGRAMA extends JFrame {
                             File rutaARCHIVOS = new File("files");
                             Runtime.getRuntime().exec("cmd /c start " + rutaARCHIVOS.getAbsolutePath() + "\\REPETIDOS_" + fileNAME.getName() + " && exit");
                         }
-                        //jtxtPATH.setText(null);
-                        //PATH = "";
                     }
                 } else {
                     dialog.dispose(); //CERRAR LOADING
@@ -692,12 +728,19 @@ public class PROGRAMA extends JFrame {
         if (fileOPEN != true) {
             //RESETEAR LISTAS
             Porciones = new ArrayList<String>();
+            Rutas = new ArrayList<String>();
             Operarios = new ArrayList<String>();
             Vigencias = new ArrayList<String>();
 
             for (int j = 0; j < CHBX_CODPOR.length; j++) {
                 if (CHBX_CODPOR[j].isSelected()){
                     Porciones.add(CHBX_CODPOR[j].getText());
+                }
+            }
+
+            for (int j = 0; j < CHBX_RUTAS.length; j++) {
+                if (CHBX_RUTAS[j].isSelected()){
+                    Rutas.add(CHBX_RUTAS[j].getText());
                 }
             }
 
@@ -723,6 +766,10 @@ public class PROGRAMA extends JFrame {
                 Porciones.clear();
             }
 
+            if (Rutas.size() == CHBX_RUTAS.length) {
+                Rutas.clear();
+            }
+
             Collections.sort(Vigencias); //ORDENAR VIGENCIAS DE MENOR A MAYOR
 
             //INICIAR METODOS
@@ -731,6 +778,7 @@ public class PROGRAMA extends JFrame {
             new Thread(() -> infoCONSUMOS_NEGATIVOS()).start();
             new Thread(() -> infoANOMALIAS()).start();
             new Thread(() -> infoANOMALIASxPORCION()).start();
+            new Thread(() -> infoANOMALIASxRUTAS()).start();
 
         }
     }
@@ -1059,24 +1107,23 @@ public class PROGRAMA extends JFrame {
             if (Operarios.size() <= 1) {
                 //CREAR GRAFICA 'TOTAL CONSUMO 0' Y POSICIONARLA
                 cells.merge(0, 0, 1, (Vigencias.size()*3)+1); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
-                for (int i = 0; i < 1; i++) {
-                    for (int j = 0; j < Vigencias.size()*3; j++) {
-                        valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
-                        String cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
-                        cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+4));
-                        cell.setFormula("=SUM(" + cellChar + "4:" + cellChar + (porcionesLocal.size()+3) + ")");
-                        if (valor % 3 == 1) {
-                            cells.merge(1, valor, 1, 3); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
-                            celdaVIGENCIAS += cellChar + "2";
-                            celdaLEIDO += cellChar + (porcionesLocal.size()+4);
-                            if (j < (Vigencias.size()*3)-3) {
-                                celdaVIGENCIAS += ",";
-                                celdaLEIDO += ",";
-                            }
+                for (int j = 0; j < Vigencias.size()*3; j++) {
+                    valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
+                    String cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
+                    cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+4));
+                    cell.setFormula("=SUM(" + cellChar + "4:" + cellChar + (porcionesLocal.size()+3) + ")");
+                    if (valor % 3 == 1) {
+                        cells.merge(1, valor, 1, 3); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
+                        celdaVIGENCIAS += cellChar + "2";
+                        celdaLEIDO += cellChar + (porcionesLocal.size()+4);
+                        if (j < (Vigencias.size()*3)-3) {
+                            celdaVIGENCIAS += ",";
+                            celdaLEIDO += ",";
                         }
                     }
-                    valor += 1;
                 }
+                valor += 1;
+
                 int idx1 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size()+4), 0, ((porcionesLocal.size()+3)+16), (Vigencias.size()*3)+1);
                 Chart ch1 = worksheet.getCharts().get(idx1);
                 ch1.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
@@ -1462,16 +1509,14 @@ public class PROGRAMA extends JFrame {
 
             //SI NO SE FILTRO NINGUN OPERARIO O SOLO SE FILTRO 1 SOLAMENTE HACER ESTO
             if (Operarios.size() <= 1) {
-                for (int i = 0; i < 1; i++) {
-                    for (int j = 0; j < Vigencias.size(); j++) {
-                        cells.merge(0, 0, 1, Vigencias.size()+1); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
-                        valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
-                        String cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+2),valor).getName()).replaceAll(""+(porcionesLocal.size()+3),"");
-                        cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+3));
-                        cell.setFormula("=SUM(" + cellChar + "3:" + cellChar + (porcionesLocal.size()+2) + ")");
-                    }
-                    valor += 1;
+                for (int j = 0; j < Vigencias.size(); j++) {
+                    cells.merge(0, 0, 1, Vigencias.size()+1); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
+                    valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
+                    String cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+2),valor).getName()).replaceAll(""+(porcionesLocal.size()+3),"");
+                    cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+3));
+                    cell.setFormula("=SUM(" + cellChar + "3:" + cellChar + (porcionesLocal.size()+2) + ")");
                 }
+                valor += 1;
                 //CREAR GRAFICA 'TOTAL CONSUMO 0' Y POSICIONARLA
                 int idx1 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size()+3), 0, ((porcionesLocal.size()+3)+16), (Vigencias.size()+1));
                 Chart ch1 = worksheet.getCharts().get(idx1);
@@ -1848,16 +1893,15 @@ public class PROGRAMA extends JFrame {
 
             //SI NO SE FILTRO NINGUN OPERARIO O SOLO SE FILTRO 1 SOLAMENTE HACER ESTO
             if (Operarios.size() <= 1) {
-                for (int i = 0; i < 1; i++) {
-                    for (int j = 0; j < Vigencias.size(); j++) {
-                        cells.merge(0, 0, 1, Vigencias.size()+1); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
-                        valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
-                        String cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+2),valor).getName()).replaceAll(""+(porcionesLocal.size()+3),"");
-                        cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+3));
-                        cell.setFormula("=SUM(" + cellChar + "3:" + cellChar + (porcionesLocal.size()+2) + ")");
-                    }
-                    valor += 1;
+                for (int j = 0; j < Vigencias.size(); j++) {
+                    cells.merge(0, 0, 1, Vigencias.size()+1); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
+                    valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
+                    String cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+2),valor).getName()).replaceAll(""+(porcionesLocal.size()+3),"");
+                    cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+3));
+                    cell.setFormula("=SUM(" + cellChar + "3:" + cellChar + (porcionesLocal.size()+2) + ")");
                 }
+                valor += 1;
+
                 //CREAR GRAFICA 'TOTAL CONSUMO 0' Y POSICIONARLA
                 int idx1 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size()+3), 0, ((porcionesLocal.size()+3)+16), (Vigencias.size()+1));
                 Chart ch1 = worksheet.getCharts().get(idx1);
@@ -2231,21 +2275,20 @@ public class PROGRAMA extends JFrame {
 
             //SI NO SE FILTRO NINGUN OPERARIO O SOLO SE FILTRO 1 SOLAMENTE HACER ESTO
             if (Operarios.size() <= 1) {
-                for (int i = 0; i < 1; i++) {
-                    for (int j = 0; j < Vigencias.size(); j++) {
-                        cells.merge(0, 0, 1, Vigencias.size()+2); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
-                        cells.merge(28, 0, 1, 2); //COMBINAR Y CENTRAR TOTAL
-                        cells.merge(29, 0, 1, 2); //COMBINAR Y CENTRAR TOTAL SIN ANOMALIAS 18 Y 28
-                        valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
-                        String cellChar = (worksheet.getCells().getCell(28,valor).getName()).replaceAll("29","");
-                        cell = worksheet.getCells().get(cellChar + "29");
-                        cell.setFormula("=SUM(" + cellChar + "3:" + cellChar + "28)");
-                        cellChar = (worksheet.getCells().getCell(29,valor).getName()).replaceAll("30","");
-                        cell = worksheet.getCells().get(cellChar + "30");
-                        cell.setFormula("=" + cellChar + "29 - (" + cellChar + "17+"+cellChar+"26)");
-                    }
-                    valor += 1;
+                for (int j = 0; j < Vigencias.size(); j++) {
+                    cells.merge(0, 0, 1, Vigencias.size()+2); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
+                    cells.merge(28, 0, 1, 2); //COMBINAR Y CENTRAR TOTAL
+                    cells.merge(29, 0, 1, 2); //COMBINAR Y CENTRAR TOTAL SIN ANOMALIAS 18 Y 28
+                    valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
+                    String cellChar = (worksheet.getCells().getCell(28,valor).getName()).replaceAll("29","");
+                    cell = worksheet.getCells().get(cellChar + "29");
+                    cell.setFormula("=SUM(" + cellChar + "3:" + cellChar + "28)");
+                    cellChar = (worksheet.getCells().getCell(29,valor).getName()).replaceAll("30","");
+                    cell = worksheet.getCells().get(cellChar + "30");
+                    cell.setFormula("=" + cellChar + "29 - (" + cellChar + "17+"+cellChar+"26)");
                 }
+                valor += 1;
+
                 //CREAR GRAFICA 'TOTAL SIN ANOM 18 Y 28' Y POSICIONARLA
                 int idx1 = worksheet.getCharts().add(ChartType.LINE, 30, 0, 42, (Vigencias.size()+2));
                 Chart ch1 = worksheet.getCharts().get(idx1);
@@ -2569,7 +2612,6 @@ public class PROGRAMA extends JFrame {
                 }
                 resultLIST.add(datosXporcion);
             }
-
             con.close(); //CERRAR CONEXION
 
             File file = new File("files\\ANOMALIASxPORCION.csv"); //ARCHIVO PARA RETORNAR TODOS LOS DATOS EN UN ARCHIVO csv
@@ -2738,53 +2780,52 @@ public class PROGRAMA extends JFrame {
             if (Operarios.size() <= 1) {
                 //CREAR GRAFICA 'TOTAL CONSUMO 0' Y POSICIONARLA
                 cells.merge(0, 0, 1, (Vigencias.size()*3)+1); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
-                for (int i = 0; i < 1; i++) {
-                    for (int j = 0; j < Vigencias.size()*3; j++) {
-                        valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
-                        String cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
+                for (int j = 0; j < Vigencias.size()*3; j++) {
+                    valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
+                    String cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
+                    cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+4));
+                    if (valor % 3 != 0) {
+                        cell.setFormula("=SUM(" + cellChar + "4:" + cellChar + (porcionesLocal.size()+3) + ")");
+                    }
+                    if (valor % 3 == 1) {
+                        Style stylePORCENTAJE; //ESTILO
+                        Range rangePORCENTAJE; //RANGO
+                        StyleFlag flagPORCENTAJE = new StyleFlag(); //BANDERA
+
+                        stylePORCENTAJE = wb.createStyle();
+                        stylePORCENTAJE.getBorders().getByBorderType(BorderType.RIGHT_BORDER).setLineStyle(CellBorderType.THIN);
+                        stylePORCENTAJE.getBorders().getByBorderType(BorderType.BOTTOM_BORDER).setLineStyle(CellBorderType.THIN);
+                        flagPORCENTAJE.setBorders(true); //GUARDAR BORDEO
+                        stylePORCENTAJE.setHorizontalAlignment(TextAlignmentType.CENTER); //ALINEAR EN EL MEDIO EN HORIZONTAL
+                        flagPORCENTAJE.setAlignments(true); //GUARDAR ALINEAMIENTOS
+                        stylePORCENTAJE.setNumber(10); //CONVERTIR NUMERO DE CELDA EN PORCENTAJE
+                        stylePORCENTAJE.getFont().setName("Calibri"); //CAMBIAR FUENTE A CALIBRI
+                        flagPORCENTAJE.setFont(true); //GUARDAR TIPO DE FUENTE
+                        stylePORCENTAJE.getFont().setSize(11); //CAMBIAR TAMAÑO DE FUENTE
+                        flagPORCENTAJE.setFontSize(true); //GUARDAR TAMAÑO
+
+                        rangePORCENTAJE = worksheet.getCells().createRange(worksheet.getCells().getCell(3,valor+2).getName() + ":" + worksheet.getCells().getCell((porcionesLocal.size()+3),valor+2).getName()); //TOMAR RANGO DE CELDAS
+                        rangePORCENTAJE.setStyle(stylePORCENTAJE);
+                        rangePORCENTAJE.applyStyle(stylePORCENTAJE, flagPORCENTAJE);
+
+                        cells.merge(1, valor, 1, 3); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
+                        celdaVIGENCIAS += cellChar + "2";
+                        cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor+2).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
+                        celdaLEIDO += cellChar + (porcionesLocal.size()+4);
+
                         cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+4));
-                        if (valor % 3 != 0) {
-                            cell.setFormula("=SUM(" + cellChar + "4:" + cellChar + (porcionesLocal.size()+3) + ")");
-                        }
-                        if (valor % 3 == 1) {
-                            Style stylePORCENTAJE; //ESTILO
-                            Range rangePORCENTAJE; //RANGO
-                            StyleFlag flagPORCENTAJE = new StyleFlag(); //BANDERA
+                        String cell1 = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
+                        String cell2 = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor+1).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
+                        cell.setFormula("=" + cell2 + (porcionesLocal.size()+4) + "/" + cell1 + (porcionesLocal.size()+4));
 
-                            stylePORCENTAJE = wb.createStyle();
-                            stylePORCENTAJE.getBorders().getByBorderType(BorderType.RIGHT_BORDER).setLineStyle(CellBorderType.THIN);
-                            stylePORCENTAJE.getBorders().getByBorderType(BorderType.BOTTOM_BORDER).setLineStyle(CellBorderType.THIN);
-                            flagPORCENTAJE.setBorders(true); //GUARDAR BORDEO
-                            stylePORCENTAJE.setHorizontalAlignment(TextAlignmentType.CENTER); //ALINEAR EN EL MEDIO EN HORIZONTAL
-                            flagPORCENTAJE.setAlignments(true); //GUARDAR ALINEAMIENTOS
-                            stylePORCENTAJE.setNumber(10); //CONVERTIR NUMERO DE CELDA EN PORCENTAJE
-                            stylePORCENTAJE.getFont().setName("Calibri"); //CAMBIAR FUENTE A CALIBRI
-                            flagPORCENTAJE.setFont(true); //GUARDAR TIPO DE FUENTE
-                            stylePORCENTAJE.getFont().setSize(11); //CAMBIAR TAMAÑO DE FUENTE
-                            flagPORCENTAJE.setFontSize(true); //GUARDAR TAMAÑO
-
-                            rangePORCENTAJE = worksheet.getCells().createRange(worksheet.getCells().getCell(3,valor+2).getName() + ":" + worksheet.getCells().getCell((porcionesLocal.size()+3),valor+2).getName()); //TOMAR RANGO DE CELDAS
-                            rangePORCENTAJE.setStyle(stylePORCENTAJE);
-                            rangePORCENTAJE.applyStyle(stylePORCENTAJE, flagPORCENTAJE);
-
-                            cells.merge(1, valor, 1, 3); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
-                            celdaVIGENCIAS += cellChar + "2";
-                            cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor+2).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
-                            celdaLEIDO += cellChar + (porcionesLocal.size()+4);
-
-                            cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+4));
-                            String cell1 = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
-                            String cell2 = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor+1).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
-                            cell.setFormula("=" + cell2 + (porcionesLocal.size()+4) + "/" + cell1 + (porcionesLocal.size()+4));
-
-                            if (j < (Vigencias.size()*3)-3) {
-                                celdaVIGENCIAS += ",";
-                                celdaLEIDO += ",";
-                            }
+                        if (j < (Vigencias.size()*3)-3) {
+                            celdaVIGENCIAS += ",";
+                            celdaLEIDO += ",";
                         }
                     }
-                    valor += 1;
                 }
+                valor += 1;
+
                 int idx1 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size()+4), 0, ((porcionesLocal.size()+3)+16), (Vigencias.size()*3)+1);
                 Chart ch1 = worksheet.getCharts().get(idx1);
                 ch1.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
@@ -2804,13 +2845,13 @@ public class PROGRAMA extends JFrame {
                 ch1.getNSeries().get(0).getMarker().setMarkerStyle(FillType.AUTOMATIC); //MOSTRAR LOS MARCADORES EN LA LINEA DE GRAFICO
             } else { //SI SE FILTRO MAS DE UN OPERARIO HACER ESTO
                 for (int i = 0; i < Operarios.size()+1; i++) {
-                    cells.merge(0, valor, 1, (Vigencias.size()*3)+1); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS Y OPERARIOS
-                    int idx1 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size()+4), (((Vigencias.size()*i)*3)+i), ((porcionesLocal.size()+3)+16), (((Vigencias.size()*(i+1))*3)+i)+1);
+                    cells.merge(0, valor, 1, (Vigencias.size() * 3) + 1); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS Y OPERARIOS
+                    int idx1 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size() + 4), (((Vigencias.size() * i) * 3) + i), ((porcionesLocal.size() + 3) + 16), (((Vigencias.size() * (i + 1)) * 3) + i) + 1);
                     Chart ch1 = worksheet.getCharts().get(idx1);
                     if (i == 0) { //SI EL CONTADOR ES DIFERENTE A 0 OSEA A LA PRIMERA TABLA TOTALIZADORA ENTONCES ASIGNARLE EL NOMBRE TOTAL CONSUMO 0
                         ch1.getTitle().setText("TOTAL % INEFICIENCIA\nTODOS LOS LECTORES FILTRADOS"); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     } else {
-                        ch1.getTitle().setText("TOTAL % INEFICIENCIA\nLECTOR (" + Operarios.get(i-1) +")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                        ch1.getTitle().setText("TOTAL % INEFICIENCIA\nLECTOR (" + Operarios.get(i - 1) + ")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
                     }
                     ch1.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
                     ch1.getTitle().getFont().setBold(true); //ASIGNARLE NEGRILLA A LA LETRA
@@ -2834,32 +2875,33 @@ public class PROGRAMA extends JFrame {
                         stylePORCENTAJE.getFont().setSize(11); //CAMBIAR TAMAÑO DE FUENTE
                         flagPORCENTAJE.setFontSize(true); //GUARDAR TAMAÑO
 
-                        rangePORCENTAJE = worksheet.getCells().createRange(worksheet.getCells().getCell(3,columnaVIGENCIA+2).getName() + ":" + worksheet.getCells().getCell((porcionesLocal.size()+3),columnaVIGENCIA+2).getName()); //TOMAR RANGO DE CELDAS
+                        rangePORCENTAJE = worksheet.getCells().createRange(worksheet.getCells().getCell(3, columnaVIGENCIA + 2).getName() + ":" + worksheet.getCells().getCell((porcionesLocal.size() + 3), columnaVIGENCIA + 2).getName()); //TOMAR RANGO DE CELDAS
                         rangePORCENTAJE.setStyle(stylePORCENTAJE);
                         rangePORCENTAJE.applyStyle(stylePORCENTAJE, flagPORCENTAJE);
 
                         cells.merge(1, columnaVIGENCIA, 1, 3); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
-                        String cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+2),columnaVIGENCIA).getName()).replaceAll(""+(porcionesLocal.size()+3),"");
+                        String cellChar = (worksheet.getCells().getCell((porcionesLocal.size() + 2), columnaVIGENCIA).getName()).replaceAll("" + (porcionesLocal.size() + 3), "");
                         celdaVIGENCIAS += cellChar + "2";
-                        cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+2),columnaVIGENCIA+2).getName()).replaceAll(""+(porcionesLocal.size()+3),"");
-                        celdaLEIDO += cellChar + (porcionesLocal.size()+4);
+                        cellChar = (worksheet.getCells().getCell((porcionesLocal.size() + 2), columnaVIGENCIA + 2).getName()).replaceAll("" + (porcionesLocal.size() + 3), "");
+                        celdaLEIDO += cellChar + (porcionesLocal.size() + 4);
 
-                        cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+4));
-                        String cell1 = (worksheet.getCells().getCell((porcionesLocal.size()+3),columnaVIGENCIA).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
-                        String cell2 = (worksheet.getCells().getCell((porcionesLocal.size()+3),columnaVIGENCIA+1).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
-                        cell.setFormula("=" + cell2 + (porcionesLocal.size()+4) + "/" + cell1 + (porcionesLocal.size()+4));
+                        cell = worksheet.getCells().get(cellChar + (porcionesLocal.size() + 4));
+                        String cell1 = (worksheet.getCells().getCell((porcionesLocal.size() + 3), columnaVIGENCIA).getName()).replaceAll("" + (porcionesLocal.size() + 4), "");
+                        String cell2 = (worksheet.getCells().getCell((porcionesLocal.size() + 3), columnaVIGENCIA + 1).getName()).replaceAll("" + (porcionesLocal.size() + 4), "");
+                        cell.setFormula("=" + cell2 + (porcionesLocal.size() + 4) + "/" + cell1 + (porcionesLocal.size() + 4));
 
-                        if (j < (Vigencias.size()-1)) {
+                        if (j < (Vigencias.size() - 1)) {
                             celdaVIGENCIAS += ",";
                             celdaLEIDO += ",";
                         }
                         columnaVIGENCIA += 3;
                     }
 
+
                     String celda = "A";
-                    for (int j = 0; j < Vigencias.size()*3; j++) {
+                    for (int j = 0; j < Vigencias.size() * 3; j++) {
                         //COLOREAR COLUMNAS PORCIONES
-                        String cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+2),valor).getName()).replaceAll(""+(porcionesLocal.size()+3),"");
+                        String cellChar = (worksheet.getCells().getCell((porcionesLocal.size() + 2), valor).getName()).replaceAll("" + (porcionesLocal.size() + 3), "");
                         if (i != 0 && j == 0) {
                             //ASIGNAR COLOR A LAS COLUMNAS PORCION
                             cells.setColumnWidth(valor, 8.43); //CAMBIAR TAMAÑO A LA COLUMNA PORCION
@@ -2868,23 +2910,23 @@ public class PROGRAMA extends JFrame {
                             flagCOLOR.setCellShading(true); //GUARDAR COLOR
                             style.setHorizontalAlignment(TextAlignmentType.LEFT); //ALINEAR A LA IZQUIERDA
                             flagCOLOR.setAlignments(true); //GUARDAR ALINEAMIENTOS
-                            range = worksheet.getCells().createRange(cellChar + "3:" + cellChar + (porcionesLocal.size()+4)); //RANGO DONDE SE APLICARA EL COLOR
+                            range = worksheet.getCells().createRange(cellChar + "3:" + cellChar + (porcionesLocal.size() + 4)); //RANGO DONDE SE APLICARA EL COLOR
                             range.applyStyle(style, flagCOLOR); //APLICAR COLOR AL RANGO DE CELDAS
                             celda = cellChar;
                         }
 
                         valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
-                        cellChar = (worksheet.getCells().getCell((porcionesLocal.size()+3),valor).getName()).replaceAll(""+(porcionesLocal.size()+4),"");
-                        cell = worksheet.getCells().get(cellChar + (porcionesLocal.size()+4));
-                        if ((valor-i) % 3 != 0) {
-                            cell.setFormula("=SUM(" + cellChar + "4:" + cellChar + (porcionesLocal.size()+3) + ")");
+                        cellChar = (worksheet.getCells().getCell((porcionesLocal.size() + 3), valor).getName()).replaceAll("" + (porcionesLocal.size() + 4), "");
+                        cell = worksheet.getCells().get(cellChar + (porcionesLocal.size() + 4));
+                        if ((valor - i) % 3 != 0) {
+                            cell.setFormula("=SUM(" + cellChar + "4:" + cellChar + (porcionesLocal.size() + 3) + ")");
                         }
 
                     }
-                    //CREAR GRAFICA 'TOTAL CONSUMO 0 X OPERARIO' Y POSICIONARLA
-                    ch1.getNSeries().add(celda+(porcionesLocal.size()+1), true); //AGREGA LA SERIE
+                    //CREAR GRAFICA 'TOTAL INEFICIENCIA X LECTOR' Y POSICIONARLA
+                    ch1.getNSeries().add(celda + (porcionesLocal.size() + 1), true); //AGREGA LA SERIE
                     ch1.getNSeries().setCategoryData(celdaVIGENCIAS); //SELECCIONAR COMO CATEGORIAS LAS VIGENCIAS
-                    ch1.getNSeries().get(0).setName("="+celda+""+(porcionesLocal.size()+4)); //ASIGNAR NOMBRE DE LA SERIE COMO LA CELDA
+                    ch1.getNSeries().get(0).setName("=" + celda + "" + (porcionesLocal.size() + 4)); //ASIGNAR NOMBRE DE LA SERIE COMO LA CELDA
                     ch1.getNSeries().get(0).setValues(celdaLEIDO); //SELECCIONAR LOS DATOS DE LA SERIE QUE EN ESTE CASO SERIA EL VALOR TOTAL POR CADA VIGENCIA
                     ch1.getNSeries().get(0).getDataLabels().setShowValue(true); //MOSTRAR LAS ETIQUETAS DE DATOS EN LA GRAFICA
                     ch1.getNSeries().get(0).getDataLabels().setPosition(LabelPositionType.ABOVE); //MOSTRAR LAS ETIQUETAS DE DATOS ENCIMA DE LA LINEA DE GRAFICO
@@ -2894,6 +2936,36 @@ public class PROGRAMA extends JFrame {
                     celdaLEIDO = "=";
                     valor += 1;
                 }
+                /*
+                wb.calculateFormula();
+
+                //CREAR GRAFICA 'TOTAL INEFICIENCIA X LECTOR' Y POSICIONARLA
+                int idx2 = worksheet.getCharts().add(ChartType.LINE, (porcionesLocal.size()+19), 0, ((porcionesLocal.size()+3)+32), 25);
+                Chart ch2 = worksheet.getCharts().get(idx2);
+                ch2.getTitle().setText("INEFICIENCIA x LECTOR"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                ch2.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
+                ch2.getTitle().getFont().setBold(true); //ASIGNARLE NEGRILLA A LA LETRA
+                ch2.setShowLegend(true); //QUITAR LEYENDA DE LA GRAFICA
+
+                List<registersLECTURAS> registers = new LinkedList<>();
+
+                for (int j = 1; j <= Vigencias.size(); j++) {
+                    columnaVIGENCIA = 3 * j;
+                    for (int i = 1; i <= Operarios.size(); i++) {
+                        columnaVIGENCIA += ((Vigencias.size() * 3) + 1);
+                        String cellChar = (worksheet.getCells().getCell((porcionesLocal.size() + 2), columnaVIGENCIA).getName()).replaceAll("" + (porcionesLocal.size() + 3), "");
+                        cell = worksheet.getCells().get(cellChar + (porcionesLocal.size() + 4));
+                        Double ineficiencia = new Double(cell.getValue().toString());
+                        registers.add(new registersLECTURAS(Integer.parseInt(Vigencias.get(j - 1)), Operarios.get(i - 1), ineficiencia));
+                    }
+                }
+
+                Collections.sort(registers, (o1, o2) -> Double.compare(o1.getIneficiencia(), o2.getIneficiencia()));
+
+                for (registersLECTURAS r : registers) {
+                    System.out.println(r.getVigencia() + " " + r.getLector() + " " + r.getIneficiencia());
+                }
+                 */
             }
 
             wb.save("files\\ANOMALIASxPORCION.xlsx", SaveFormat.XLSX); //GUARDAR DATOS REPETIDOS EN UN ARCHIVO EXCEL
@@ -2906,10 +2978,506 @@ public class PROGRAMA extends JFrame {
         }
     }
 
+    //METODO informe -> ANOMALIASxRUTAS
+    public void infoANOMALIASxRUTAS() {
+        DATABASE sql = new DATABASE(); //CREA UNA NUEVA CONEXION CON LA BASE DE DATOS
+        Connection con = sql.conectarSQL(); //LLAMA LA CONEXION
+        try {
+            //LISTAR OPERARIOS
+            String CODOPE = "";
+            //SI LA CANTIDAD DE OPERARIOS FILTRADOS ES DIFERENTE A 0 Y A LA CANTIDAD TOTAL EXISTENTES HACER ESTO
+            if (Operarios.size() != 0) {
+                CODOPE = " AND (";
+                //SI HAY OPERARIOS FILTRADOS CREAR UNA PARTE DEL QUERY
+                for (int j = 0; j < Operarios.size(); j++) {
+                    CODOPE += "codigo_operario = '" + Operarios.get(j) + "'";
+                    if (j < (Operarios.size() - 1)) {
+                        CODOPE += " OR ";
+                    }
+                }
+                CODOPE += ")";
+            }
+
+            //LISTAR PORCIONES
+            ArrayList<String> rutasLocal = new ArrayList<String>(); //LISTA LOCAL QUE TENDRA LAS MISMA CANTIDAD DE PORCIONES ESTEN FILTRADAS O NO
+            String query = ""; //CREAR EL QUERY DEPENDIENDO SI HAY O NO HAY FILTROS
+            //SI ALGUNA PORCION ESTA FILTRADA HACER ESTO
+            for (int i = 0; i < Rutas.size(); i++) {
+                rutasLocal.add(Rutas.get(i)); //AGREGAR PORCIONES FILTRADAS A LA LISTA LOCAL
+                //SI SE FILTRO ALGUN OPERARIO, HACER ESTO
+                if (Operarios.size() != 0) {
+                    query += "SELECT"; //QUERY CON TODAS LAS PORCIONES PERO CON SOLO LOS OPERARIOS FILTRADOS
+                    if (Operarios.size() != 1) { //SI SE FILTRO MAS DE UNO SACAR TOTAL DE TODOS LOS SELECCIONADOS
+                        query += " uni_lectura,";
+                        for (int j = 0; j < Vigencias.size(); j++) {
+                            query += " COUNT (*) FILTER (WHERE (uni_lectura = '" + Rutas.get(i) + "') AND (vigencia = '" + Vigencias.get(j) + "')" + CODOPE + ") AS '" + Vigencias.get(j) + ":TOTAL', COUNT (*) FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (uni_lectura = '" + Rutas.get(i) + "') AND (vigencia = '" + Vigencias.get(j) + "')" + CODOPE + ") AS '" + Vigencias.get(j) + ":FILTRADO', printf(\"%.6f\",(COUNT() FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (vigencia = '" + Vigencias.get(j) + "')" + CODOPE + ")*1.0/COUNT() FILTER(WHERE (vigencia = '" + Vigencias.get(j) + "')" + CODOPE + "))) AS '" + Vigencias.get(j) + ":PORCENTAJE'";
+                            if (j+1 < Vigencias.size()) {
+                                query += ",";
+                            }
+                        }
+                    }
+
+                    for (int j = 0; j < Operarios.size(); j++) { //CICLO QUE GENERA UN QUERY CON TODOS LOS OPERARIOS SELECCIONADOS 1..*
+                        if (Operarios.size() != 1) { //SI SE FILTRO MAS DE UNO IR SEPARANDO EL QUERY CON COMAS PARA SACAR TODOS LOS OPERARIOS FILTRADOS
+                            query += ",";
+                        }
+                        query += " uni_lectura AS 'uni_lectura:" + Rutas.get(j) + "'"; //QUERY CON TODAS LAS PORCIONES PERO CON SOLO LOS OPERARIOS FILTRADOS
+                        for (int l = 0; l < Vigencias.size(); l++) {
+                            query += ", COUNT (*) FILTER (WHERE (uni_lectura = '" + Rutas.get(i) + "') AND (codigo_operario = '" + Operarios.get(j) + "') AND (vigencia = '" + Vigencias.get(l) + "')) AS '" + Vigencias.get(l) + ":" + Operarios.get(j) + ":TOTAL', COUNT (*) FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (uni_lectura = '" + Rutas.get(i) + "') AND (codigo_operario = '" + Operarios.get(j) + "') AND (vigencia = '" + Vigencias.get(l) + "')) AS '" + Vigencias.get(l) + ":" + Operarios.get(j) + ":FILTRADO', printf(\"%.6f\",(COUNT() FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (codigo_operario = '" + Operarios.get(j) + "') AND (vigencia = '" + Vigencias.get(l) + "'))*1.0/COUNT() FILTER(WHERE (vigencia = '" + Vigencias.get(l) + "') AND (codigo_operario = '" + Operarios.get(j) + "')))) AS '" + Vigencias.get(l) + ":" + Operarios.get(j) + ":PORCENTAJE'";
+                        }
+                    }
+                    query += " FROM LECTURAS WHERE (uni_lectura = '" + Rutas.get(i) + "')";
+                    if (i < (Rutas.size()-1)) {
+                        query += " UNION ";
+                    }
+                }   //SI NO SE FILTRO NINGUN OPERARIO HACER ESTO
+                else {
+                    query += "SELECT uni_lectura,";
+                    for (int j = 0; j < Vigencias.size(); j++) { //CICLO QUE SACA TODOS LOS OPERARIOS RESUMIDAMENTE
+                        query += " COUNT (*) FILTER (WHERE (uni_lectura = '" + Rutas.get(i) + "') AND (vigencia = '" + Vigencias.get(j) + "')) AS '" + Vigencias.get(j) + ":TOTAL', COUNT (*) FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (uni_lectura = '" + Rutas.get(i) + "') AND (vigencia = '" + Vigencias.get(j) + "')) AS '" + Vigencias.get(j) + ":FILTRADO', printf(\"%.6f\",(COUNT() FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (vigencia = '" + Vigencias.get(j) + "'))*1.0/COUNT() FILTER(WHERE (vigencia = '" + Vigencias.get(j) + "')))) AS '" + Vigencias.get(j) + ":PORCENTAJE'";
+                        if (j+1 < Vigencias.size()) {
+                            query += ",";
+                        }
+                    }
+                    query += " FROM LECTURAS WHERE (uni_lectura = '" + Rutas.get(i) + "')";
+                    if (i < (Rutas.size()-1)) {
+                        query += " UNION ";
+                    }
+                }
+            }
+
+            //SI NO SE FILTRO NINGUNA PORCION HACER ESTO
+            if (Rutas.size() == 0) {
+                //CICLO QUE AGREGA TODAS LAS PORCIONES EXISTENTES EN UNA LISTA LOCAL
+                for (int i = 0; i < CHBX_RUTAS.length; i++) {
+                    rutasLocal.add(CHBX_RUTAS[i].getText());
+                }
+                //SI SE FILTRO ALGUN OPERARIO, HACER ESTO
+                if (Operarios.size() != 0) {
+                    query += "SELECT"; //QUERY CON TODAS LAS PORCIONES PERO CON SOLO LOS OPERARIOS FILTRADOS
+
+                    if (Operarios.size() != 1) { //SI SE FILTRO MAS DE UNO SACAR TOTAL DE TODOS LOS SELECCIONADOS
+                        query += " uni_lectura,";
+                        for (int j = 0; j < Vigencias.size(); j++) {
+                            query += " COUNT (*) FILTER (WHERE (vigencia = '" + Vigencias.get(j) + "')" + CODOPE + ") AS '" + Vigencias.get(j) + ":TOTAL', COUNT (*) FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (vigencia = '" + Vigencias.get(j) + "')" + CODOPE + ") AS '" + Vigencias.get(j) + ":FILTRADO', printf(\"%.6f\",(COUNT() FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (vigencia = '" + Vigencias.get(j) + "')" + CODOPE + ")*1.0/COUNT() FILTER(WHERE (vigencia = '" + Vigencias.get(j) + "')" + CODOPE + "))) AS '" + Vigencias.get(j) + ":PORCENTAJE'";
+                            if (j+1 < Vigencias.size()) {
+                                query += ",";
+                            }
+                        }
+                    }
+
+                    for (int i = 0; i < Operarios.size(); i++) { //CICLO QUE GENERA UN QUERY CON TODOS LOS OPERARIOS SELECCIONADOS 1..*
+                        if (Operarios.size() != 1) { //SI SE FILTRO MAS DE UNO IR SEPARANDO EL QUERY CON COMAS PARA SACAR TODOS LOS OPERARIOS FILTRADOS
+                            query += ",";
+                        }
+                        query += " uni_lectura AS 'uni_lectura:" + Operarios.get(i) + "'"; //QUERY CON TODAS LAS PORCIONES PERO CON SOLO LOS OPERARIOS FILTRADOS
+                        for (int j = 0; j < Vigencias.size(); j++) {
+                            query += ", COUNT (*) FILTER (WHERE (codigo_operario = '" + Operarios.get(i) + "') AND (vigencia = '" + Vigencias.get(j) + "')) AS '" + Vigencias.get(j) + ":" + Operarios.get(i) + ":TOTAL', COUNT (*) FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (codigo_operario = '" + Operarios.get(i) + "') AND (vigencia = '" + Vigencias.get(j) + "')) AS '" + Vigencias.get(j) + ":" + Operarios.get(i) + ":FILTRADO', printf(\"%.6f\",(COUNT() FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (codigo_operario = '" + Operarios.get(i) + "') AND (vigencia = '" + Vigencias.get(j) + "'))*1.0/COUNT() FILTER(WHERE (vigencia = '" + Vigencias.get(j) + "') AND (codigo_operario = '" + Operarios.get(i) + "')))) AS '" + Vigencias.get(j) + ":" + Operarios.get(i) + ":PORCENTAJE'";
+                        }
+                    }
+                    query += " FROM LECTURAS GROUP BY uni_lectura";
+
+                }   //SI NO SE FILTRO NINGUN OPERARIO HACER ESTO
+                else {
+                    query += "SELECT uni_lectura,";
+                    for (int i = 0; i < Vigencias.size(); i++) { //CICLO QUE SACA TODOS LOS OPERARIOS RESUMIDAMENTE
+                        query += " COUNT (*) FILTER (WHERE (vigencia = '" + Vigencias.get(i) + "')) AS '" + Vigencias.get(i) + ":TOTAL', COUNT (*) FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (vigencia = '" + Vigencias.get(i) + "')) AS '" + Vigencias.get(i) + ":FILTRADO', printf(\"%.6f\",(COUNT() FILTER(WHERE (anomalia_1 != '') AND (anomalia_1 = 9 OR anomalia_1 = 16 OR anomalia_1 = 17 OR anomalia_1 = 19 OR anomalia_1 = 20) AND (vigencia = '" + Vigencias.get(i) + "'))*1.0/COUNT() FILTER(WHERE (vigencia = '" + Vigencias.get(i) + "')))) AS '" + Vigencias.get(i) + ":PORCENTAJE'";
+                        if (i+1 < Vigencias.size()) {
+                            query += ",";
+                        }
+                    }
+                    query += " FROM LECTURAS GROUP BY uni_lectura";
+                }
+            }
+
+            List<String> resultLIST = new ArrayList(); //LISTA PARA SACAR LOS RESULTADOS DE CADA FILA
+
+            //CONSULTA -> QUERY
+            PreparedStatement ps = con.prepareStatement(query);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                String datosXporcion = "";
+                //SI NO SE FILTRO NINGUN OPERARIO O SE FILTRO MAS DE UN OPERARIO HACER ESTO
+                if (Operarios.size() == 0 || Operarios.size() > 1) {
+                    //EN TOTAL = CODIGO PORCION x VIGENCIAS -> RESULTADO
+                    String result = rs.getString("uni_lectura");
+                    datosXporcion += result + ",";
+                    for (int i = 0; i < Vigencias.size(); i++) {
+                        result = rs.getString(Vigencias.get(i) + ":TOTAL");
+                        result += "," + rs.getString(Vigencias.get(i) + ":FILTRADO");
+                        String porcentaje = rs.getString(Vigencias.get(i) + ":PORCENTAJE");
+                        porcentaje = "\"" + porcentaje.replace(".", ",") + "\"";
+                        result += "," + porcentaje;
+                        if (Operarios.size() == 0) {
+                            datosXporcion += result;
+                            if (i < (Vigencias.size()-1)) {
+                                datosXporcion += ",";
+                            }
+                        } else {
+                            datosXporcion += result + ",";
+                        }
+                    }
+                }
+
+                //CICLO POR OPERARIO = CODIGO_PORCION x VIGENCIAS -> RESULTADO
+                for (int i = 0; i < Operarios.size(); i++) {
+                    String result = rs.getString("uni_lectura:" + Operarios.get(i));
+                    datosXporcion += result + ",";
+                    for (int j = 0; j < Vigencias.size(); j++) {
+                        result = rs.getString(Vigencias.get(j) + ":" + Operarios.get(i) + ":TOTAL");
+                        result += "," + rs.getString(Vigencias.get(j) + ":" + Operarios.get(i) + ":FILTRADO");
+                        String porcentaje = rs.getString(Vigencias.get(j) + ":" + Operarios.get(i) + ":PORCENTAJE");
+                        porcentaje = "\"" + porcentaje.replace(".", ",") + "\"";
+                        result += "," + porcentaje;
+                        datosXporcion += result;
+                        if (j < Vigencias.size()-1 || i < Operarios.size()-1) {
+                            datosXporcion += ",";
+                        }
+                    }
+                }
+                resultLIST.add(datosXporcion);
+            }
+            con.close(); //CERRAR CONEXION
+
+            File file = new File("files\\ANOMALIASxRUTAS.csv"); //ARCHIVO PARA RETORNAR TODOS LOS DATOS EN UN ARCHIVO csv
+            PrintWriter write = new PrintWriter(file); //PARA ESCRIBIR TODOS LOS DATOS EN EL NUEVO ARCHIVO
+
+            String estructura = ""; //ESTRUCTURA PRIMERA FILA TOTAL (SI SELECCIONO MAS DE UN OPERARIO) Y POR OPERARIO
+            if (Operarios.size() == 0) {
+                estructura += "TODOS LOS LECTORES"; //TOTAL
+            } else if (Operarios.size() > 1) { //SI SE FILTRO MAS DE UN OPERARIO HACER ESTO
+                estructura += "TODOS LOS LECTORES FILTRADOS,"; //TOTAL
+                //AGREGAR SEPARADORES DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS DESPUES DE LA PRIMERA CELDA -> TODOS LOS OPERARIOS
+                for (int j = 0; j < Vigencias.size(); j++) { // +1 POR LA COLUMNA PORCION
+                    estructura += ",,,";
+                }
+            }
+            //AGREGAR CADA OPERARIO FILTRADO TAMBIEN SEPARANDO DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS
+            for (int i = 0; i < Operarios.size(); i++) { //CICLO PARA CADA OPERARIO
+                estructura += "LECTOR " + Operarios.get(i);
+                if (i < (Operarios.size()-1)) {
+                    estructura += ",";
+                }
+                for (int j = 0; j < Vigencias.size(); j++) { // +1 POR LA COLUMNA PORCION
+                    if (i < (Operarios.size()-1)) {
+                        estructura += ",,,";
+                    }
+                }
+            }
+            write.println(estructura);
+            estructura = ""; //VACIAR EL STRING
+
+            //ESCRIBIR LAS PORCIONES Y LAS VIGENCIAS EN LA SEGUNDA FILA DE LA ESTRUCTURA
+            int OyV; //ENTERO QUE SERVIRA PARA LA LONGITUD DEL CICLO
+            //SI SE FILTRO SOLAMENTE 1 OPERARIO
+            if (Operarios.size() == 1) {
+                OyV = 1; //SOLAMENTE REPETIR EL CICLO 1 VEZ
+            } else {
+                OyV = Operarios.size() + 1;  //PORCIONES SELECCIONADAS + 1 DEL TOTAL
+            }
+
+            for (int i = 0; i < OyV; i++) { //CICLO POR CADA OPERARIO QUE EXISTA AGREGAR LAS VIGENCIAS EXISTENTES
+                estructura += ",";
+                for (int j = 0; j < Vigencias.size(); j++) {
+                    estructura += ("VIG" + Vigencias.get(j));
+                    if (j < (Vigencias.size()-1)) { //SI j ES MENOR AL TOTAL DE VIGENCIAS, SEPARAR LAS VIGENCIAS HASTA SER IGUAL AL TOTAL DE VIGENCIAS, ES DECIR, HASTA QUE TERMINE DE SEPARAR TODAS LAS VIGENCIAS
+                        estructura += ",,,";
+                    }
+                }
+                if (Operarios.size() > 1 && i < (Operarios.size())) { //SI SE FILTRO MAS DE UN OPERARIO Y j ES MENOR A CADA OPERARIO SEPARAR TODA LA ESTRUCTURA PARA VOLVER A REESCRIBIR LAS PORCIONES Y VIGENCIAS DE CADA OPERARIO HASTA QUE j SEA IGUAL, ES DECIR, TERMINE DE SEPARAR TODOS LOS OPERARIOS
+                    estructura += ",,,";
+                }
+            }
+            write.println(estructura);
+            estructura = ""; //VACIAR EL STRING
+            for (int i = 0; i < OyV; i++) { //CICLO POR CADA OPERARIO QUE EXISTA AGREGAR LAS VIGENCIAS EXISTENTES
+                estructura += "RUTA,";
+                for (int j = 0; j < Vigencias.size(); j++) {
+                    estructura += ("LEIDO,ERRORES,%");
+                    if (j < (Vigencias.size()-1)) { //SI j ES MENOR AL TOTAL DE VIGENCIAS, SEPARAR LAS VIGENCIAS HASTA SER IGUAL AL TOTAL DE VIGENCIAS, ES DECIR, HASTA QUE TERMINE DE SEPARAR TODAS LAS VIGENCIAS
+                        estructura += ",";
+                    }
+                }
+                if (Operarios.size() > 1 && i < (Operarios.size())) { //SI SE FILTRO MAS DE UN OPERARIO Y j ES MENOR A CADA OPERARIO SEPARAR TODA LA ESTRUCTURA PARA VOLVER A REESCRIBIR LAS PORCIONES Y VIGENCIAS DE CADA OPERARIO HASTA QUE j SEA IGUAL, ES DECIR, TERMINE DE SEPARAR TODOS LOS OPERARIOS
+                    estructura += ",";
+                }
+            }
+            write.println(estructura);
+            //ESCRIBIR RESULTADOS DE CONSULTA DEBAJO DE LA ESTRUCTURA - INICIA SEGUNDA FILA
+            for (int i = 0; i < rutasLocal.size(); i++) {
+                write.println(resultLIST.get(i));
+            }
+            //AÑADIR TOTALIZADOR
+            estructura = ""; //ESTRUCTURA ULTIMA FILA TOTAL (SI SELECCIONO MAS DE UN OPERARIO) Y POR OPERARIO
+            if (Operarios.size() == 0 || Operarios.size() > 1) {
+                estructura += "TOTAL"; //TOTAL
+                if (Operarios.size() > 1) {
+                    estructura += ",";
+                }
+                if (Operarios.size() > 1) { //SI SE FILTRO MAS DE UN OPERARIO HACER ESTO
+                    //AGREGAR SEPARADORES DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS DESPUES DE LA PRIMERA CELDA -> TODOS LOS OPERARIOS
+                    for (int j = 0; j < Vigencias.size(); j++) { // +1 POR LA COLUMNA PORCION
+                        estructura += ",,,";
+                    }
+                }
+
+            }
+            //AGREGAR CADA OPERARIO FILTRADO TAMBIEN SEPARANDO DEPENDIENDO DE LAS VIGENCIAS SELECCIONADAS
+            for (int i = 0; i < Operarios.size(); i++) { //CICLO PARA CADA OPERARIO
+                estructura += "TOTAL";
+                if (i < (Operarios.size()-1)) {
+                    estructura += ",";
+                }
+                for (int j = 0; j < Vigencias.size(); j++) { // +1 POR LA COLUMNA PORCION
+                    if (i < (Operarios.size()-1)) {
+                        estructura += ",,,";
+                    }
+                }
+            }
+            write.println(estructura);
+            write.close(); //CIERRA LA ESCRITURA DE DATOS
+
+            //CONVERTIR EN EXCEL CON DISEÑO
+            Workbook wb = new Workbook("files\\ANOMALIASxRUTAS.csv"); //NUEVO LIBRO
+            Worksheet worksheet = wb.getWorksheets().get(0); //NUEVA HOJA TOMANDO LA PRIMERA HOJA DEL LIBRO
+
+            //GUARDAR LA LETRA DE LA ULTIMA COLUMNA
+            String lastCell = (worksheet.getCells().getCell(0,worksheet.getCells().getMaxDataColumn()).getName()).replaceAll("1","");
+
+            Cells cells; //CELDAS GENERAL
+            Style style; //ESTILO
+            StyleFlag flag = new StyleFlag(); //BANDERA
+            StyleFlag flagCOLOR = new StyleFlag(); //BANDERA
+            Range range; //RANGO
+
+            //ASIGNAR CELDA CON UN TAMAÑO DEFINIDO
+            cells = worksheet.getCells();
+            cells.setColumnWidth(0, 10.14); //COLUMNA RUTA
+
+            //INICIALIZAR LA VARIABLE CON EL LIBRO
+            style = wb.createStyle();
+            //ASIGNAR BORDES, TIPO DE FUENTE Y TAMAÑO DE FUENTE A LAS CELDAS
+            style.getBorders().getByBorderType(BorderType.RIGHT_BORDER).setLineStyle(CellBorderType.THIN);
+            style.getBorders().getByBorderType(BorderType.BOTTOM_BORDER).setLineStyle(CellBorderType.THIN);
+            flag.setBorders(true); //GUARDAR BORDEO
+            style.getFont().setName("Calibri"); //CAMBIAR FUENTE A CALIBRI
+            flag.setFont(true); //GUARDAR TIPO DE FUENTE
+            style.getFont().setSize(11); //CAMBIAR TAMAÑO DE FUENTE
+            flag.setFontSize(true); //GUARDAR TAMAÑO
+            range = worksheet.getCells().createRange("A1:"+lastCell+(rutasLocal.size()+4)); //RANGO DONDE SE APLICARA EL DISEÑO
+            range.applyStyle(style, flag); //APLICAR DISEÑO AL RANGO DE CELDAS
+            //ASIGNAR COLOR A LAS PRIMERAS FILAS Y COLUMNAS
+            style.setForegroundColor(com.aspose.cells.Color.fromArgb(255, 255, 0)); //CAMBIAR COLOR
+            style.setPattern(BackgroundType.SOLID); //DEFINIRLO COMO SOLIDO
+            flagCOLOR.setCellShading(true); //GUARDAR COLOR
+            range = worksheet.getCells().createRange("A1:"+lastCell+"1"); //RANGO DONDE SE APLICARA EL COLOR
+            range.applyStyle(style, flagCOLOR); //APLICAR COLOR AL RANGO DE CELDAS
+            //ASIGNAR COLOR A LAS PRIMERAS FILAS Y COLUMNAS
+            style.setForegroundColor(com.aspose.cells.Color.fromArgb(169, 208, 142)); //CAMBIAR COLOR
+            style.setPattern(BackgroundType.SOLID); //DEFINIRLO COMO SOLIDO
+            flagCOLOR.setCellShading(true); //GUARDAR COLOR
+            range = worksheet.getCells().createRange("A2:"+lastCell+"2"); //RANGO DONDE SE APLICARA EL COLOR
+            range.applyStyle(style, flagCOLOR); //APLICAR COLOR AL RANGO DE CELDAS
+            //ASIGNAR COLOR A LAS SEGUNDAS FILAS Y COLUMNAS PORCION
+            style.setForegroundColor(com.aspose.cells.Color.fromArgb(142, 169, 219)); //CAMBIAR COLOR
+            style.setPattern(BackgroundType.SOLID); //DEFINIRLO COMO SOLIDO
+            flagCOLOR.setCellShading(true); //GUARDAR COLOR
+            range = worksheet.getCells().createRange("A3:"+lastCell+"3"); //RANGO DONDE SE APLICARA EL COLOR
+            range.applyStyle(style, flagCOLOR); //APLICAR COLOR AL RANGO DE CELDAS
+            range = worksheet.getCells().createRange("A3:A"+(rutasLocal.size()+4)); //RANGO DONDE SE APLICARA EL COLOR
+            range.applyStyle(style, flagCOLOR); //APLICAR COLOR AL RANGO DE CELDAS
+            //ASIGNAR ALINEACIONES A LAS COLUMNAS VIGENCIAS
+            style.setHorizontalAlignment(TextAlignmentType.CENTER); //ALINEAR EN EL MEDIO EN HORIZONTAL
+            flag.setAlignments(true); //GUARDAR ALINEAMIENTOS
+            range = worksheet.getCells().createRange("B2:"+lastCell+(rutasLocal.size()+4)); //RANGO DONDE SE APLICARA EL DISEÑO
+            range.applyStyle(style, flag); //APLICAR DISEÑO AL RANGO DE CELDAS
+            range.setColumnWidth(10);
+            range = worksheet.getCells().createRange("A1:"+lastCell+"1"); //RANGO DONDE SE APLICARA EL DISEÑO
+            range.applyStyle(style, flag); //APLICAR DISEÑO AL RANGO DE CELDAS
+
+            Cell cell;
+            int valor = 0;
+            int columnaVIGENCIA = 0;
+            String celdaVIGENCIAS = "=";
+            String celdaLEIDO = "=";
+
+            //SI NO SE FILTRO NINGUN OPERARIO O SOLO SE FILTRO 1 SOLAMENTE HACER ESTO
+            if (Operarios.size() <= 1) {
+                //CREAR GRAFICA 'TOTAL CONSUMO 0' Y POSICIONARLA
+                cells.merge(0, 0, 1, (Vigencias.size()*3)+1); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
+                for (int j = 0; j < Vigencias.size()*3; j++) {
+                    valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
+                    String cellChar = (worksheet.getCells().getCell((rutasLocal.size()+3),valor).getName()).replaceAll(""+(rutasLocal.size()+4),"");
+                    cell = worksheet.getCells().get(cellChar + (rutasLocal.size()+4));
+                    if (valor % 3 != 0) {
+                        cell.setFormula("=SUM(" + cellChar + "4:" + cellChar + (rutasLocal.size()+3) + ")");
+                    }
+                    if (valor % 3 == 1) {
+                        Style stylePORCENTAJE; //ESTILO
+                        Range rangePORCENTAJE; //RANGO
+                        StyleFlag flagPORCENTAJE = new StyleFlag(); //BANDERA
+
+                        stylePORCENTAJE = wb.createStyle();
+                        stylePORCENTAJE.getBorders().getByBorderType(BorderType.RIGHT_BORDER).setLineStyle(CellBorderType.THIN);
+                        stylePORCENTAJE.getBorders().getByBorderType(BorderType.BOTTOM_BORDER).setLineStyle(CellBorderType.THIN);
+                        flagPORCENTAJE.setBorders(true); //GUARDAR BORDEO
+                        stylePORCENTAJE.setHorizontalAlignment(TextAlignmentType.CENTER); //ALINEAR EN EL MEDIO EN HORIZONTAL
+                        flagPORCENTAJE.setAlignments(true); //GUARDAR ALINEAMIENTOS
+                        stylePORCENTAJE.setNumber(10); //CONVERTIR NUMERO DE CELDA EN PORCENTAJE
+                        stylePORCENTAJE.getFont().setName("Calibri"); //CAMBIAR FUENTE A CALIBRI
+                        flagPORCENTAJE.setFont(true); //GUARDAR TIPO DE FUENTE
+                        stylePORCENTAJE.getFont().setSize(11); //CAMBIAR TAMAÑO DE FUENTE
+                        flagPORCENTAJE.setFontSize(true); //GUARDAR TAMAÑO
+
+                        rangePORCENTAJE = worksheet.getCells().createRange(worksheet.getCells().getCell(3,valor+2).getName() + ":" + worksheet.getCells().getCell((rutasLocal.size()+3),valor+2).getName()); //TOMAR RANGO DE CELDAS
+                        rangePORCENTAJE.setStyle(stylePORCENTAJE);
+                        rangePORCENTAJE.applyStyle(stylePORCENTAJE, flagPORCENTAJE);
+
+                        cells.merge(1, valor, 1, 3); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
+                        celdaVIGENCIAS += cellChar + "2";
+                        cellChar = (worksheet.getCells().getCell((rutasLocal.size()+3),valor+2).getName()).replaceAll(""+(rutasLocal.size()+4),"");
+                        celdaLEIDO += cellChar + (rutasLocal.size()+4);
+
+                        cell = worksheet.getCells().get(cellChar + (rutasLocal.size()+4));
+                        String cell1 = (worksheet.getCells().getCell((rutasLocal.size()+3),valor).getName()).replaceAll(""+(rutasLocal.size()+4),"");
+                        String cell2 = (worksheet.getCells().getCell((rutasLocal.size()+3),valor+1).getName()).replaceAll(""+(rutasLocal.size()+4),"");
+                        cell.setFormula("=" + cell2 + (rutasLocal.size()+4) + "/" + cell1 + (rutasLocal.size()+4));
+
+                        if (j < (Vigencias.size()*3)-3) {
+                            celdaVIGENCIAS += ",";
+                            celdaLEIDO += ",";
+                        }
+                    }
+                }
+                valor += 1;
+
+                int idx1 = worksheet.getCharts().add(ChartType.LINE, (rutasLocal.size()+4), 0, ((rutasLocal.size()+3)+16), (Vigencias.size()*3)+1);
+                Chart ch1 = worksheet.getCharts().get(idx1);
+                ch1.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
+                ch1.getTitle().getFont().setBold(true); //ASIGNARLE NEGRILLA A LA LETRA
+                ch1.setShowLegend(false); //QUITAR LEYENDA DE LA GRAFICA
+                ch1.getNSeries().add("A"+(rutasLocal.size()+4), true); //AGREGA LA SERIE
+                ch1.getNSeries().setCategoryData(celdaVIGENCIAS); //SELECCIONAR COMO CATEGORIAS LAS VIGENCIAS
+                ch1.getNSeries().get(0).setValues(celdaLEIDO); //SELECCIONAR LOS DATOS DE LA SERIE QUE EN ESTE CASO SERIA EL VALOR TOTAL POR CADA VIGENCIA
+
+                if (Operarios.size() == 0) {
+                    ch1.getNSeries().get(0).setName("=\"TOTAL % INEFICIENCIA\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
+                } else {
+                    ch1.getNSeries().get(0).setName("=\"TOTAL % INEFICIENCIA\nLECTOR " + Operarios.get(0) + "\""); //ASIGNAR NOMBRE DE LA SERIA COMO LA CELDA
+                }
+                ch1.getNSeries().get(0).getDataLabels().setShowValue(true); //MOSTRAR LAS ETIQUETAS DE DATOS EN LA GRAFICA
+                ch1.getNSeries().get(0).getDataLabels().setPosition(LabelPositionType.ABOVE); //MOSTRAR LAS ETIQUETAS DE DATOS ENCIMA DE LA LINEA DE GRAFICO
+                ch1.getNSeries().get(0).getMarker().setMarkerStyle(FillType.AUTOMATIC); //MOSTRAR LOS MARCADORES EN LA LINEA DE GRAFICO
+            } else { //SI SE FILTRO MAS DE UN OPERARIO HACER ESTO
+                for (int i = 0; i < Operarios.size()+1; i++) {
+                    cells.merge(0, valor, 1, (Vigencias.size() * 3) + 1); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS Y OPERARIOS
+                    int idx1 = worksheet.getCharts().add(ChartType.LINE, (rutasLocal.size() + 4), (((Vigencias.size() * i) * 3) + i), ((rutasLocal.size() + 3) + 16), (((Vigencias.size() * (i + 1)) * 3) + i) + 1);
+                    Chart ch1 = worksheet.getCharts().get(idx1);
+                    if (i == 0) { //SI EL CONTADOR ES DIFERENTE A 0 OSEA A LA PRIMERA TABLA TOTALIZADORA ENTONCES ASIGNARLE EL NOMBRE TOTAL CONSUMO 0
+                        ch1.getTitle().setText("TOTAL % INEFICIENCIA\nTODOS LOS LECTORES FILTRADOS"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                    } else {
+                        ch1.getTitle().setText("TOTAL % INEFICIENCIA\nLECTOR (" + Operarios.get(i - 1) + ")"); //ASIGNARLE UN NOMBRE A LA GRAFICA
+                    }
+                    ch1.getTitle().getFont().setSize(15); //ASIGNARLE UN TAMAÑO LETRA
+                    ch1.getTitle().getFont().setBold(true); //ASIGNARLE NEGRILLA A LA LETRA
+                    ch1.setShowLegend(false); //QUITAR LEYENDA DE LA GRAFICA
+
+                    columnaVIGENCIA += 1;
+                    for (int j = 0; j < Vigencias.size(); j++) {
+                        Style stylePORCENTAJE; //ESTILO
+                        Range rangePORCENTAJE; //RANGO
+                        StyleFlag flagPORCENTAJE = new StyleFlag(); //BANDERA
+
+                        stylePORCENTAJE = wb.createStyle();
+                        stylePORCENTAJE.getBorders().getByBorderType(BorderType.RIGHT_BORDER).setLineStyle(CellBorderType.THIN);
+                        stylePORCENTAJE.getBorders().getByBorderType(BorderType.BOTTOM_BORDER).setLineStyle(CellBorderType.THIN);
+                        flagPORCENTAJE.setBorders(true); //GUARDAR BORDEO
+                        stylePORCENTAJE.setHorizontalAlignment(TextAlignmentType.CENTER); //ALINEAR EN EL MEDIO EN HORIZONTAL
+                        flagPORCENTAJE.setAlignments(true); //GUARDAR ALINEAMIENTOS
+                        stylePORCENTAJE.setNumber(10); //CONVERTIR NUMERO DE CELDA EN PORCENTAJE
+                        stylePORCENTAJE.getFont().setName("Calibri"); //CAMBIAR FUENTE A CALIBRI
+                        flagPORCENTAJE.setFont(true); //GUARDAR TIPO DE FUENTE
+                        stylePORCENTAJE.getFont().setSize(11); //CAMBIAR TAMAÑO DE FUENTE
+                        flagPORCENTAJE.setFontSize(true); //GUARDAR TAMAÑO
+
+                        rangePORCENTAJE = worksheet.getCells().createRange(worksheet.getCells().getCell(3, columnaVIGENCIA + 2).getName() + ":" + worksheet.getCells().getCell((rutasLocal.size() + 3), columnaVIGENCIA + 2).getName()); //TOMAR RANGO DE CELDAS
+                        rangePORCENTAJE.setStyle(stylePORCENTAJE);
+                        rangePORCENTAJE.applyStyle(stylePORCENTAJE, flagPORCENTAJE);
+
+                        cells.merge(1, columnaVIGENCIA, 1, 3); //COMBINAR Y CENTRAR POR LA CANTIDAD TOTAL DE VIGENCIAS
+                        String cellChar = (worksheet.getCells().getCell((rutasLocal.size() + 2), columnaVIGENCIA).getName()).replaceAll("" + (rutasLocal.size() + 3), "");
+                        celdaVIGENCIAS += cellChar + "2";
+                        cellChar = (worksheet.getCells().getCell((rutasLocal.size() + 2), columnaVIGENCIA + 2).getName()).replaceAll("" + (rutasLocal.size() + 3), "");
+                        celdaLEIDO += cellChar + (rutasLocal.size() + 4);
+
+                        cell = worksheet.getCells().get(cellChar + (rutasLocal.size() + 4));
+                        String cell1 = (worksheet.getCells().getCell((rutasLocal.size() + 3), columnaVIGENCIA).getName()).replaceAll("" + (rutasLocal.size() + 4), "");
+                        String cell2 = (worksheet.getCells().getCell((rutasLocal.size() + 3), columnaVIGENCIA + 1).getName()).replaceAll("" + (rutasLocal.size() + 4), "");
+                        cell.setFormula("=" + cell2 + (rutasLocal.size() + 4) + "/" + cell1 + (rutasLocal.size() + 4));
+
+                        if (j < (Vigencias.size() - 1)) {
+                            celdaVIGENCIAS += ",";
+                            celdaLEIDO += ",";
+                        }
+                        columnaVIGENCIA += 3;
+                    }
+
+
+                    String celda = "A";
+                    for (int j = 0; j < Vigencias.size() * 3; j++) {
+                        //COLOREAR COLUMNAS PORCIONES
+                        String cellChar = (worksheet.getCells().getCell((rutasLocal.size() + 2), valor).getName()).replaceAll("" + (rutasLocal.size() + 3), "");
+                        if (i != 0 && j == 0) {
+                            //ASIGNAR COLOR A LAS COLUMNAS PORCION
+                            cells.setColumnWidth(valor, 8.43); //CAMBIAR TAMAÑO A LA COLUMNA PORCION
+                            style.setForegroundColor(com.aspose.cells.Color.fromArgb(142, 169, 219)); //CAMBIAR COLOR
+                            style.setPattern(BackgroundType.SOLID); //DEFINIRLO COMO SOLIDO
+                            flagCOLOR.setCellShading(true); //GUARDAR COLOR
+                            style.setHorizontalAlignment(TextAlignmentType.LEFT); //ALINEAR A LA IZQUIERDA
+                            flagCOLOR.setAlignments(true); //GUARDAR ALINEAMIENTOS
+                            range = worksheet.getCells().createRange(cellChar + "3:" + cellChar + (rutasLocal.size() + 4)); //RANGO DONDE SE APLICARA EL COLOR
+                            range.applyStyle(style, flagCOLOR); //APLICAR COLOR AL RANGO DE CELDAS
+                            celda = cellChar;
+                        }
+
+                        valor += 1; //SUMA PARA SACAR LA CELDA DONDE ES EL TOTAL
+                        cellChar = (worksheet.getCells().getCell((rutasLocal.size() + 3), valor).getName()).replaceAll("" + (rutasLocal.size() + 4), "");
+                        cell = worksheet.getCells().get(cellChar + (rutasLocal.size() + 4));
+                        if ((valor - i) % 3 != 0) {
+                            cell.setFormula("=SUM(" + cellChar + "4:" + cellChar + (rutasLocal.size() + 3) + ")");
+                        }
+
+                    }
+                    //CREAR GRAFICA 'TOTAL INEFICIENCIA X LECTOR' Y POSICIONARLA
+                    ch1.getNSeries().add(celda + (rutasLocal.size() + 1), true); //AGREGA LA SERIE
+                    ch1.getNSeries().setCategoryData(celdaVIGENCIAS); //SELECCIONAR COMO CATEGORIAS LAS VIGENCIAS
+                    ch1.getNSeries().get(0).setName("=" + celda + "" + (rutasLocal.size() + 4)); //ASIGNAR NOMBRE DE LA SERIE COMO LA CELDA
+                    ch1.getNSeries().get(0).setValues(celdaLEIDO); //SELECCIONAR LOS DATOS DE LA SERIE QUE EN ESTE CASO SERIA EL VALOR TOTAL POR CADA VIGENCIA
+                    ch1.getNSeries().get(0).getDataLabels().setShowValue(true); //MOSTRAR LAS ETIQUETAS DE DATOS EN LA GRAFICA
+                    ch1.getNSeries().get(0).getDataLabels().setPosition(LabelPositionType.ABOVE); //MOSTRAR LAS ETIQUETAS DE DATOS ENCIMA DE LA LINEA DE GRAFICO
+                    ch1.getNSeries().get(0).getMarker().setMarkerStyle(FillType.AUTOMATIC); //MOSTRAR LOS MARCADORES EN LA LINEA DE GRAFICO
+
+                    celdaVIGENCIAS = "=";
+                    celdaLEIDO = "=";
+                    valor += 1;
+                }
+
+            }
+
+            wb.save("files\\ANOMALIASxRUTAS.xlsx", SaveFormat.XLSX); //GUARDAR DATOS REPETIDOS EN UN ARCHIVO EXCEL
+            file.delete(); //ELIMINAR ARCHIVO DE .csv
+            INFORME();
+
+        } catch (Exception ex) {
+            dialog.dispose();
+            JOptionPane.showMessageDialog(null, "ERROR: PROCESO INTERRUMPIDO. POR FAVOR, CIERRE TODAS LAS PESTAÑAS RELACIONADAS AL INFORME Y VUELTA A INTENTAR NUEVAMENTE", "",JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
     //METODO GENERAR INFORME
     public void INFORME() {
         valFINISH++;
-        if (valFINISH == 5) {
+        if (valFINISH == 6) {
             try {
                 //CREAR EXCEL DE INFORME
                 Workbook wbINFORME = new Workbook(); //NUEVO LIBRO
@@ -2919,17 +3487,20 @@ public class PROGRAMA extends JFrame {
                 File fileEXCEL_CONSUMOS_NEGATIVOS = new File("files\\CONSUMOS_NEGATIVOS.xlsx");
                 File fileEXCEL_ANOMALIAS = new File("files\\ANOMALIAS.xlsx");
                 File fileEXCEL_ANOMALIASxPORCION = new File("files\\ANOMALIASxPORCION.xlsx");
+                File fileEXCEL_ANOMALIASxRUTAS = new File("files\\ANOMALIASxRUTAS.xlsx");
                 Workbook wbLECTURAS = new Workbook(fileEXCEL_LECTURAS.getAbsolutePath()); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
                 Workbook wbCONSUMO_0 = new Workbook(fileEXCEL_CONSUMO_0.getAbsolutePath()); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
                 Workbook wbCONSUMOS_NEGATIVOS = new Workbook(fileEXCEL_CONSUMOS_NEGATIVOS.getAbsolutePath()); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
                 Workbook wbANOMALIAS = new Workbook(fileEXCEL_ANOMALIAS.getAbsolutePath()); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
                 Workbook ANOMALIASxPORCION = new Workbook(fileEXCEL_ANOMALIASxPORCION.getAbsolutePath()); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
+                Workbook ANOMALIASxRUTAS = new Workbook(fileEXCEL_ANOMALIASxRUTAS.getAbsolutePath()); //NUEVO LIBRO DEL ARCHIVO DE ANOMALIAS
                 //COMBINAR HOJAS EN EL INFORME
                 wbINFORME.combine(wbLECTURAS);
                 wbINFORME.combine(wbCONSUMO_0);
                 wbINFORME.combine(wbCONSUMOS_NEGATIVOS);
                 wbINFORME.combine(wbANOMALIAS);
                 wbINFORME.combine(ANOMALIASxPORCION);
+                wbINFORME.combine(ANOMALIASxRUTAS);
                 wbINFORME.getWorksheets().removeAt(0); //ELIMINAR LA PRIMERA HOJA VACIA DEL LIBRO
                 wbINFORME.save("files\\INFORME.xlsx");
                 //ELIMINAR LIBROS COPIADOS
@@ -2938,6 +3509,7 @@ public class PROGRAMA extends JFrame {
                 fileEXCEL_CONSUMOS_NEGATIVOS.delete();
                 fileEXCEL_ANOMALIAS.delete();
                 fileEXCEL_ANOMALIASxPORCION.delete();
+                fileEXCEL_ANOMALIASxRUTAS.delete();
 
                 dialog.dispose(); //CERRAR LOADING
                 JOptionPane.showMessageDialog(null, "SE EXPORTO CORRECTAMENTE EL INFORME", "",JOptionPane.INFORMATION_MESSAGE);
@@ -2958,3 +3530,44 @@ public class PROGRAMA extends JFrame {
     }
 
 }
+
+/*
+class registersLECTURAS {
+
+    private int vigencia;
+    private String lector;
+    private double ineficiencia;
+
+
+    public registersLECTURAS (int vigencia, String lector, double ineficiencia) {
+        this.vigencia = vigencia;
+        this.lector = lector;
+        this.ineficiencia = ineficiencia;
+    }
+
+    public int getVigencia() {
+        return vigencia;
+    }
+
+    public void setVigencia(int vigencia) {
+        this.vigencia = vigencia;
+    }
+
+    public String getLector() {
+        return lector;
+    }
+
+    public void setLector(String lector) {
+        this.lector = lector;
+    }
+
+    public double getIneficiencia() {
+        return ineficiencia;
+    }
+
+    public void setIneficiencia(double ineficiencia) {
+        this.ineficiencia = ineficiencia;
+    }
+
+}
+*/

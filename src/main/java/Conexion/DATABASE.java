@@ -1,6 +1,5 @@
 package Conexion;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -20,5 +19,6 @@ public class DATABASE {
 
 }
 
-//HACER GRAFICAS DEL LECTOR
+//HACER GRAFICAS DE LECTORES
+//HACER GRAFICAS DE ANOMALIAS
 //HACER UNI_LECTURA X LECTOR
